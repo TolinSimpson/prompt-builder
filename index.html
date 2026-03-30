@@ -1,0 +1,3190 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>LLM Coding Prompt Builder</title>
+        <style>
+            * {
+                margin: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 760px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+                background: #fafafa;
+            }
+            h1 {
+                font-size: 1.4rem;
+                margin-bottom: 0.25rem;
+            }
+            .subtitle {
+                font-size: 0.85rem;
+                color: #666;
+                margin-bottom: 1.5rem;
+            }
+            .step {
+                margin-bottom: 1rem;
+                opacity: 1;
+                transition: opacity 0.2s;
+            }
+            .step.disabled {
+                opacity: 0.35;
+                pointer-events: none;
+            }
+            .step-label {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+            }
+            .step-hint {
+                font-size: 0.78rem;
+                color: #888;
+                margin-bottom: 0.3rem;
+            }
+            select,
+            .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font: inherit;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+            }
+            select {
+                cursor: pointer;
+            }
+            select:focus,
+            .text-input:focus {
+                outline: 2px solid #4a90d9;
+                border-color: #4a90d9;
+            }
+            .text-input {
+                resize: none;
+                height: 2.4rem;
+            }
+            .text-input.tall {
+                height: 3.6rem;
+            }
+            .checks {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.4rem;
+                margin-top: 0.25rem;
+            }
+            .checks label {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.82rem;
+                font-weight: normal;
+                text-transform: none;
+                letter-spacing: 0;
+                cursor: pointer;
+                padding: 0.25rem 0.55rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                user-select: none;
+                position: relative;
+            }
+            .checks label:has(input:checked) {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .checks input {
+                display: none;
+            }
+            .preset-bar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.35rem;
+                margin-bottom: 1.25rem;
+            }
+            .preset-btn {
+                padding: 0.3rem 0.7rem;
+                font-size: 0.8rem;
+                border: 1px solid #bbb;
+                border-radius: 4px;
+                background: #fff;
+                cursor: pointer;
+                font-family: inherit;
+            }
+            .preset-btn:hover {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .preset-btn.active {
+                background: #d0e2ff;
+                border-color: #4a90d9;
+                font-weight: 600;
+            }
+            .output-section {
+                margin-top: 1.5rem;
+                border-top: 1px solid #ddd;
+                padding-top: 1rem;
+            }
+            .output-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            .prompt-area {
+                width: 100%;
+                min-height: 120px;
+                padding: 0.75rem;
+                font: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                resize: vertical;
+                color: #222;
+            }
+            .prompt-area.secondary {
+                min-height: 80px;
+                margin-top: 0.75rem;
+                border-color: #d4a;
+                background: #fffaf5;
+            }
+            .btn-row {
+                display: flex;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+            }
+            button {
+                padding: 0.4rem 1rem;
+                font: inherit;
+                cursor: pointer;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #f5f5f5;
+            }
+            button:hover {
+                background: #e0e0e0;
+            }
+            .toast {
+                font-size: 0.8rem;
+                color: #2e7d32;
+                align-self: center;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .toast.show {
+                opacity: 1;
+            }
+            .section-divider {
+                font-size: 0.7rem;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin: 0.3rem 0 0.15rem;
+            }
+            /* Ordered toggle buttons */
+            .checks label .order-badge {
+                display: none;
+                width: 1.1rem;
+                height: 1.1rem;
+                border-radius: 50%;
+                background: #4a90d9;
+                color: #fff;
+                font-size: 0.65rem;
+                font-weight: 700;
+                line-height: 1.1rem;
+                text-align: center;
+                flex-shrink: 0;
+            }
+            .checks label.ordered .order-badge {
+                display: inline-block;
+            }
+            .checks label.ordered {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            /* Tooltip system */
+            [data-tip] {
+                position: relative;
+            }
+            [data-tip]::after {
+                content: attr(data-tip);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.72rem;
+                font-weight: normal;
+                text-transform: none;
+                letter-spacing: 0;
+                line-height: 1.35;
+                padding: 0.35rem 0.55rem;
+                border-radius: 4px;
+                white-space: normal;
+                width: max-content;
+                max-width: 260px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 10;
+            }
+            [data-tip]:hover::after {
+                opacity: 1;
+            }
+            /* Plan modifiers section */
+            .plan-modifiers {
+                margin-top: 0.5rem;
+            }
+            .pass-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #8a5a;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin: 0.75rem 0 0.3rem;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>LLM Coding Prompt Builder</h1>
+        <p class="subtitle">
+            Dropdowns guide word choice. Text fields add your specifics. Prompt
+            updates live.
+        </p>
+
+        <div
+            class="step-label"
+            style="margin-bottom: 0.35rem"
+            data-tip="Load language-specific conventions, coding standards, and traits. Select multiple for cross-language projects."
+        >
+            Domain Presets — select all that apply
+        </div>
+        <div class="step-hint">
+            Multi-language projects? Select multiple (e.g. HTML/CSS + Unity/C#
+            for WebGL shaders)
+        </div>
+        <div class="preset-bar" id="preset-bar"></div>
+
+        <div class="step" id="step-action">
+            <span
+                class="step-label"
+                data-tip="The verb that opens your prompt. Signals to the LLM whether to create from scratch, modify existing code, or produce a plan."
+                >1. Action</span
+            >
+            <select id="sel-action" onchange="onSelect('action')">
+                <option value="">Choose an action verb...</option>
+            </select>
+        </div>
+
+        <div class="step disabled" id="step-plan-modifiers">
+            <span
+                class="step-label"
+                data-tip="Shape the plan output so it's structured for an LLM to execute step-by-step."
+                >Plan Output Modifiers</span
+            >
+            <span class="step-hint"
+                >Control how the plan is structured for LLM execution</span
+            >
+            <div class="checks" id="plan-modifier-checks"></div>
+        </div>
+
+        <div class="step disabled" id="step-type">
+            <span
+                class="step-label"
+                data-tip="What kind of artifact the LLM should produce. Determines which scope options and traits are available."
+                >2. Output Type</span
+            >
+            <select id="sel-type" onchange="onSelect('type')">
+                <option value="">Choose what to build...</option>
+            </select>
+        </div>
+
+        <div class="step disabled" id="step-describe">
+            <span
+                class="step-label"
+                data-tip="This is your creative input — describe the specific thing you want. Be concrete: name the features, the data, the user interaction."
+                >3. What specifically?</span
+            >
+            <span class="step-hint"
+                >Describe the thing you're building — this is the creative core
+                of your prompt</span
+            >
+            <textarea
+                class="text-input tall"
+                id="txt-describe"
+                placeholder="e.g. a word frequency counter that analyzes pasted text and shows sortable results with frequency bars"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step disabled" id="step-scope">
+            <span
+                class="step-label"
+                data-tip="How big and complex the output should be. Constrains the LLM's scope so it doesn't over-engineer or pull in unnecessary dependencies."
+                >4. Scope</span
+            >
+            <select id="sel-scope" onchange="onSelect('scope')">
+                <option value="">Choose scope...</option>
+            </select>
+        </div>
+
+        <div class="step disabled" id="step-structure">
+            <span
+                class="step-label"
+                data-tip="How files and folders should be organized. Sets the directory layout the LLM will follow when generating code."
+                >5. Project Structure</span
+            >
+            <span class="step-hint"
+                >Choose a directory layout or describe your own</span
+            >
+            <select id="sel-structure" onchange="buildPrompt()">
+                <option value="">No structure preference...</option>
+            </select>
+            <textarea
+                class="text-input"
+                id="txt-structure"
+                placeholder="Custom structure override, e.g. src/core/, src/ui/, src/utils/, tests/"
+                oninput="buildPrompt()"
+                style="margin-top: 0.35rem"
+            ></textarea>
+        </div>
+
+        <div class="step disabled" id="step-conventions">
+            <span
+                class="step-label"
+                data-tip="Industry coding standards and style guides. Tells the LLM which naming conventions, patterns, and idioms to follow. Select multiple for multi-language files."
+                >6. Coding Conventions &amp; Standards</span
+            >
+            <span class="step-hint"
+                >Select all conventions that apply to this project</span
+            >
+            <div class="checks" id="convention-checks"></div>
+        </div>
+
+        <div class="step disabled" id="step-tooling">
+            <span
+                class="step-label"
+                data-tip="Third-party tools, build systems, and target platforms. Tells the LLM which ecosystem tools to use and what environment to target."
+                >7. Tooling &amp; Platform</span
+            >
+            <span class="step-hint"
+                >Select tools and platforms relevant to this project</span
+            >
+            <div class="checks" id="tooling-checks"></div>
+        </div>
+
+        <div class="step disabled" id="step-quality">
+            <span
+                class="step-label"
+                data-tip="What to optimize for when trade-offs arise. Select multiple — the first selected gets primary emphasis, others provide balance."
+                >8. Quality Priorities</span
+            >
+            <span class="step-hint"
+                >Select all that matter — first selected gets primary
+                emphasis</span
+            >
+            <div class="checks" id="quality-checks"></div>
+        </div>
+
+        <div class="step disabled" id="step-input">
+            <span
+                class="step-label"
+                data-tip="Where the data comes from. 'Untrusted' triggers sanitization and validation. 'Internal' means the code can trust its callers."
+                >9. Input Handling</span
+            >
+            <select id="sel-input" onchange="onSelect('input')">
+                <option value="">Choose input context...</option>
+            </select>
+        </div>
+
+        <div class="step disabled" id="step-errorhandling">
+            <span
+                class="step-label"
+                data-tip="How aggressively the code should catch and handle errors. 'Catch all' wraps every operation; 'Minimal' only handles what's likely to fail; 'Let it crash' relies on the runtime."
+                >10. Error Handling Strategy</span
+            >
+            <select id="sel-errorhandling" onchange="buildPrompt()">
+                <option value="">Choose error handling approach...</option>
+                <option value="catch-all">
+                    Catch all — wrap every operation, never let exceptions
+                    propagate
+                </option>
+                <option value="defensive">
+                    Defensive — try/catch at boundaries, validate inputs,
+                    structured error types
+                </option>
+                <option value="balanced">
+                    Balanced — handle likely failures, let unexpected errors
+                    propagate with context
+                </option>
+                <option value="minimal">
+                    Minimal — only handle errors that are expected and
+                    recoverable
+                </option>
+                <option value="let-crash">
+                    Let it crash — fail fast, rely on the runtime or supervisor
+                    to recover
+                </option>
+                <option value="result-type">
+                    Result types — no exceptions, return Result/Either/Option
+                    for all fallible operations
+                </option>
+            </select>
+        </div>
+
+        <div class="step disabled" id="step-traits">
+            <span
+                class="step-label"
+                data-tip="Specific capabilities to include. Each selected trait adds an explicit requirement to the prompt so the LLM doesn't skip it."
+                >11. Additional Traits</span
+            >
+            <div class="checks" id="trait-checks"></div>
+        </div>
+
+        <div class="step disabled" id="step-extra">
+            <span
+                class="step-label"
+                data-tip="Free-form space for anything the dropdowns don't cover — specific libraries, edge cases, constraints, or features."
+                >12. Extra Requirements (optional)</span
+            >
+            <span class="step-hint"
+                >Anything else — specific features, constraints, edge cases,
+                libraries to use or avoid</span
+            >
+            <textarea
+                class="text-input tall"
+                id="txt-extra"
+                placeholder="e.g. Support drag-and-drop file input. Exclude common stop words. Export results as CSV."
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step disabled" id="step-secondpass">
+            <span
+                class="step-label"
+                data-tip="What the LLM should do AFTER completing the main task. Click in order — steps execute in the sequence you select them. Click again to remove."
+                >13. Second Pass (optional)</span
+            >
+            <span class="step-hint"
+                >Click in order of priority — steps execute in the sequence you
+                select them</span
+            >
+            <div class="checks" id="secondpass-checks"></div>
+            <textarea
+                class="text-input"
+                id="txt-secondpass"
+                placeholder="Additional second-pass instructions (optional)"
+                oninput="buildPrompt()"
+                style="margin-top: 0.4rem"
+            ></textarea>
+        </div>
+
+        <div class="output-section">
+            <div class="output-label">Generated Prompt</div>
+            <textarea id="prompt-box" class="prompt-area"></textarea>
+            <div id="secondpass-output" style="display: none">
+                <div class="pass-label">Second Pass</div>
+                <textarea
+                    id="prompt-box-2"
+                    class="prompt-area secondary"
+                    readonly
+                ></textarea>
+            </div>
+            <div class="btn-row">
+                <button onclick="copyPrompt()">Copy All</button>
+                <button onclick="copyMain()">Copy Main Only</button>
+                <button onclick="resetAll()">Reset</button>
+                <span class="toast" id="toast">Copied!</span>
+            </div>
+        </div>
+
+        <script>
+            const flow = [
+                "action",
+                "plan-modifiers",
+                "type",
+                "describe",
+                "scope",
+                "structure",
+                "conventions",
+                "tooling",
+                "quality",
+                "input",
+                "errorhandling",
+                "traits",
+                "extra",
+                "secondpass",
+            ];
+
+            // ── Tooltip data for dynamic elements ──
+            const presetTips = {
+                "HTML/CSS":
+                    "Web standards: semantic markup, CSS methodologies, accessibility guidelines",
+                JavaScript:
+                    "Vanilla JS: ES modules, modern syntax, documentation patterns",
+                "Unity/C#":
+                    "Game development: MonoBehaviour patterns, C# conventions, Unity architecture",
+                "GLSL/Shaders":
+                    "GPU programming: shader languages, graphics API conventions, performance patterns",
+                "React/TypeScript":
+                    "Frontend framework: component patterns, type safety, state management",
+                Python: "General purpose: PEP 8, type hints, scientific computing conventions",
+                "Node.js":
+                    "Server-side JS: async patterns, framework conventions, production practices",
+                Rust: "Systems programming: memory safety idioms, API guidelines, zero-cost abstractions",
+                Go: "Backend services: stdlib idioms, concurrency patterns, interface-driven design",
+                "Swift/iOS":
+                    "Apple ecosystem: API design guidelines, UI framework patterns, platform conventions",
+                "Java/Kotlin/Android":
+                    "JVM and Android: Google Java style, Kotlin idioms, Android lifecycle patterns",
+                "Unreal/C++":
+                    "Unreal Engine: UObject system, UPROPERTY macros, Epic C++ conventions, Blueprints",
+                "C/C++":
+                    "Systems and embedded: C99/C11/C++17 standards, memory management, POSIX patterns",
+            };
+
+            const qualityTips = {
+                secure: "Defend against XSS, injection, and data leaks. Sanitize inputs, escape outputs, validate boundaries.",
+                performant:
+                    "Optimize speed and memory. Use efficient algorithms, avoid unnecessary allocations, consider caching.",
+                readable:
+                    "Code that's easy to understand and maintain. Clear naming, logical structure, minimal cleverness.",
+                robust: "Graceful error handling. Anticipate edge cases, fail with clear messages, recover when possible.",
+                testable:
+                    "Easy to unit test. Pure functions, dependency injection, clear interfaces between modules.",
+                accessible:
+                    "Usable by everyone. Screen reader support, keyboard navigation, ARIA labels, color contrast.",
+                portable:
+                    "Runs everywhere. No platform-specific APIs, minimal dependencies, standard interfaces.",
+                modular:
+                    "Separated into independent, reusable modules. Each module has a single responsibility, clear public API, and no circular dependencies.",
+            };
+
+            const conventionTips = {
+                // HTML/CSS — dir: public/, src/styles/, src/components/
+                w3c: "W3C web standards: semantic HTML5 elements, valid CSS, WCAG compliance. Dir: public/ (static assets), src/ (components, styles), dist/ (build output)",
+                bem: "Block__Element--Modifier: structured CSS naming. Dir: src/blocks/ (one file per block), src/elements/, src/modifiers/",
+                utility:
+                    "Utility-first CSS (Tailwind-style). Dir: src/ (components), tailwind.config.js, src/styles/base.css (custom utilities)",
+                // JavaScript
+                "es-modules":
+                    "ES import/export, tree-shakeable, no CommonJS. Dir: src/ (modules), lib/ (compiled output), index.js (entry point)",
+                jsdoc: "/** @param {string} name */ — type annotations in comments, IDE-friendly",
+                "airbnb-js":
+                    "Airbnb JS style: consistent formatting, ESLint rules. Dir: src/, __tests__/, .eslintrc (Airbnb config)",
+                "strict-js":
+                    "'use strict' in all files. Strict equality (===), no implicit globals, no eval, no with statements",
+                // Unity/C#
+                "ms-csharp":
+                    "Microsoft C# style: PascalCase publics, camelCase locals, XML docs. Dir: Assets/Scripts/{Feature}/, Assets/Prefabs/, Assets/ScriptableObjects/",
+                "unity-style":
+                    "Unity patterns: MonoBehaviour lifecycle, SerializeField, components. Dir: Assets/Scripts/, Assets/Prefabs/, Assets/Materials/, Assets/Scenes/, Assets/Resources/, Assets/Editor/, Assets/Plugins/",
+                dots: "Unity DOTS: ECS, Burst, Job System. Dir: Assets/Scripts/Components/, Assets/Scripts/Systems/, Assets/Scripts/Authoring/",
+                "unity-netcode":
+                    "Unity Netcode: NetworkBehaviour, NetworkVariable, ServerRpc/ClientRpc. Choose server-authoritative (server validates all state) or client-authoritative (client owns movement, server validates results)",
+                // GLSL/Shaders
+                "glsl-es":
+                    "GLSL ES 3.0: precision qualifiers, mobile GPU compatible. Dir: Shaders/ (*.vert, *.frag, *.glsl), Shaders/includes/ (shared functions)",
+                hlsl: "HLSL: semantics, cbuffers, platform macros. Dir: Assets/Shaders/ (*.shader, *.hlsl), Assets/Shaders/Includes/ (*.hlsl shared)",
+                "shader-graph":
+                    "Shader Graph custom nodes: defined inputs/outputs, no side effects. Dir: Assets/Shaders/SubGraphs/, Assets/Shaders/CustomFunctions/",
+                // React/TypeScript
+                "strict-ts":
+                    "TypeScript strict mode: no any, exhaustive checks, discriminated unions. Dir: src/components/, src/hooks/, src/types/, src/utils/, src/pages/",
+                "react-hooks":
+                    "Functional components + hooks, custom hooks for shared logic. Dir: src/components/{Feature}/, src/hooks/, src/context/",
+                nextjs: "Next.js app router: server components, file-based routing. Dir: app/ (routes), app/api/ (API routes), components/, lib/ (utilities), public/ (static)",
+                // Python
+                pep8: "PEP 8: 4-space indent, snake_case, 79-char lines. Dir: src/{package}/, tests/, pyproject.toml, README.md",
+                "google-py":
+                    "Google Python style: specific docstrings, import sorting. Dir: {package}/, tests/, docs/, setup.py or pyproject.toml",
+                scientific:
+                    "Scientific Python: NumPy docstrings, vectorized ops. Dir: {package}/, notebooks/, data/, tests/, environment.yml",
+                // Node.js
+                "node-std":
+                    "Node.js: ES modules, async/await, structured errors. Dir: src/ (modules), src/routes/, src/middleware/, src/utils/, tests/, config/",
+                express:
+                    "Express: middleware chain, router modules, error handler. Dir: src/routes/, src/middleware/, src/controllers/, src/models/, src/utils/",
+                fastify:
+                    "Fastify: JSON schema validation, plugins, decorators. Dir: src/plugins/, src/routes/, src/schemas/, src/services/",
+                // Rust
+                "rust-api":
+                    "Rust API Guidelines: From/Into, builder pattern, error enums. Dir: src/lib.rs, src/{module}/, tests/, benches/, examples/",
+                clippy: "Clippy-clean: idiomatic patterns, no unnecessary unsafe. All default lints pass",
+                embedded:
+                    "Embedded Rust: no_std, no heap, fixed-size. Dir: src/main.rs, src/hal/, src/drivers/, memory.x (linker script)",
+                // Go
+                "effective-go":
+                    "Effective Go: stdlib idioms, short names, interfaces. Dir: cmd/{app}/, internal/{package}/, pkg/ (public), go.mod",
+                "uber-go":
+                    "Uber Go style: structured errors, functional options, zap. Dir: cmd/, internal/, pkg/, config/",
+                "google-go":
+                    "Google Go style: package design, table tests, protobufs. Dir: cmd/, internal/, api/ (proto), pkg/",
+                // Swift/iOS
+                "apple-swift":
+                    "Apple Swift Guidelines: clarity, protocol-oriented. Dir: Sources/{Module}/, Tests/, Package.swift or {App}/",
+                swiftui:
+                    "SwiftUI: @State/@Binding, environment objects. Dir: {App}/Views/, {App}/Models/, {App}/ViewModels/, {App}/Services/",
+                uikit: "UIKit: delegation, coordinators, Auto Layout. Dir: {App}/ViewControllers/, {App}/Views/, {App}/Coordinators/, {App}/Models/",
+                // Java/Kotlin/Android
+                "google-java":
+                    "Google Java style: 4-space indent, Javadoc. Dir: src/main/java/com/{org}/{project}/, src/test/java/, pom.xml or build.gradle",
+                "kotlin-idioms":
+                    "Kotlin idioms: data classes, coroutines, null safety. Dir: src/main/kotlin/com/{org}/{project}/, src/test/kotlin/",
+                "android-arch":
+                    "Android Arch Components: ViewModel, Repository. Dir: app/src/main/java/{pkg}/ui/, data/, domain/, di/, app/src/main/res/",
+                "spring-boot":
+                    "Spring Boot: auto-config, annotations, starter deps. Dir: src/main/java/{pkg}/controller/, service/, repository/, model/, config/",
+                // Unreal/C++
+                "epic-cpp":
+                    "Epic C++ standard: U/A/F/S prefixes, Unreal macros, TArray/TMap. Dir: Source/{Module}/Public/, Source/{Module}/Private/, {Module}.Build.cs",
+                "unreal-gameplay":
+                    "Unreal Gameplay Framework: Actors, Components, GAS. Dir: Source/{Game}/Public/Characters/, Abilities/, Components/, GameModes/",
+                "blueprint-friendly":
+                    "Blueprint-exposed: UFUNCTION(BlueprintCallable), UPROPERTY(EditAnywhere). Content/Blueprints/, Content/DataAssets/",
+                "unreal-network":
+                    "Unreal Networking: Replication, RPCs, NetRole. Server-authoritative (server owns game state, clients predict) or listen-server (host is both server and client)",
+                // C/C++
+                c11: "Modern C (C11/C17): _Static_assert, atomics, designated initializers. Dir: src/, include/{project}/, tests/, Makefile or CMakeLists.txt",
+                cpp17: "Modern C++17: RAII, smart pointers, structured bindings. Dir: src/, include/{project}/, tests/, benchmarks/, cmake/",
+                "google-cpp":
+                    "Google C++ style: 2-space indent, snake_case functions, no exceptions. Dir: {project}/, {project}/internal/, tests/",
+                "misra-c":
+                    "MISRA C: safety-critical embedded, restricted language subset. Dir: src/, include/, tests/, misra_config.txt, no dynamic memory",
+            };
+
+            const traitTips = {
+                "Responsive layout":
+                    "Adapts to any screen size using flexible grids, media queries, or container queries",
+                "Semantic HTML":
+                    "Uses meaningful elements (nav, article, section) instead of generic divs",
+                "Accessible (WCAG 2.1)":
+                    "Meets Web Content Accessibility Guidelines: alt text, focus management, contrast ratios",
+                "Accessible (ARIA)":
+                    "Uses ARIA roles and attributes for screen reader compatibility",
+                "Print-friendly":
+                    "Includes print stylesheet: hides nav, adjusts layout, preserves content",
+                "Dark mode support":
+                    "Respects prefers-color-scheme or provides a manual toggle",
+                "Mobile-first":
+                    "Designed for small screens first, enhanced for larger ones",
+                "Keyboard navigable":
+                    "All interactive elements reachable and operable via keyboard alone",
+                "Progressive enhancement":
+                    "Core functionality works without JS; enhanced with JS when available",
+                "Tree-shakeable":
+                    "Dead code is eliminated by bundlers — no side effects in module scope",
+                "Browser + Node compatible":
+                    "Runs in both environments without platform-specific code",
+                "No build step":
+                    "Works directly in the browser — no transpilation or bundling required",
+                "Async/await":
+                    "Uses async/await for asynchronous operations instead of callbacks",
+                "Event-driven":
+                    "Architecture based on emitting and listening to events",
+                "Lazy-loaded":
+                    "Loads resources on demand rather than upfront to improve initial load time",
+                "Object pooling":
+                    "Reuses objects instead of creating/destroying them to reduce GC pressure",
+                "Serializable state":
+                    "Game state can be saved to disk and restored — no runtime-only references",
+                "Editor tooling":
+                    "Custom inspectors, property drawers, or editor windows for Unity Editor",
+                "Gizmo debugging":
+                    "Visual debugging helpers drawn in the Scene view",
+                "Platform-agnostic":
+                    "Works on PC, console, and mobile without platform-specific code paths",
+                "Coroutine-safe":
+                    "Properly handles coroutine lifecycle — starts, stops, and cleanup",
+                "Scriptable Objects":
+                    "Uses ScriptableObject assets for shared data and configuration",
+                "GPU-optimized":
+                    "Minimizes texture reads, branching, and register pressure for GPU efficiency",
+                "Branching-free":
+                    "Avoids if/else in shaders — uses step(), lerp(), and math instead",
+                "LOD-aware":
+                    "Adjusts detail level based on distance from camera",
+                "Instancing support":
+                    "Works with GPU instancing for drawing many objects efficiently",
+                "Multi-pass":
+                    "Supports multiple render passes (shadow, depth, color, post-processing)",
+                "Cross-platform graphics API":
+                    "Works across OpenGL, Vulkan, DirectX, and Metal",
+                "SSR compatible":
+                    "Works with server-side rendering — no window/document access at import time",
+                Themeable:
+                    "Styling can be customized via CSS variables, theme objects, or design tokens",
+                "Error boundaries":
+                    "React error boundaries catch and display component-level failures gracefully",
+                "Memoized renders":
+                    "Uses React.memo, useMemo, useCallback to prevent unnecessary re-renders",
+                "Type-annotated":
+                    "Full type hints on all function signatures and key variables",
+                "CLI-ready":
+                    "Can be invoked from the command line with argument parsing",
+                Logging:
+                    "Structured logging with levels (debug, info, warn, error) and context",
+                "Config file support":
+                    "Reads settings from a config file (TOML, YAML, JSON, or .env)",
+                "Pip-installable":
+                    "Includes setup.py or pyproject.toml for pip install",
+                "Cross-platform":
+                    "Works on Windows, macOS, and Linux without modification",
+                "Doctest examples":
+                    "Includes runnable examples in docstrings that double as tests",
+                "Graceful shutdown":
+                    "Handles SIGTERM/SIGINT — finishes in-flight requests, closes connections cleanly",
+                "Structured logging":
+                    "JSON-formatted log output with consistent fields for machine parsing",
+                "Health checks":
+                    "Exposes /health or /ready endpoint for load balancers and orchestrators",
+                "Rate limiting":
+                    "Prevents abuse by limiting requests per client per time window",
+                "CORS configured":
+                    "Sets appropriate Cross-Origin Resource Sharing headers",
+                "Environment-based config":
+                    "Configuration via environment variables (12-factor app style)",
+                "Stream processing":
+                    "Handles data as streams rather than buffering entire payloads in memory",
+                "Cluster-ready":
+                    "Can run multiple instances behind a load balancer without shared memory state",
+                "Zero-copy":
+                    "Passes data by reference or slice rather than cloning — minimizes allocations",
+                "Async runtime": "Uses tokio or async-std for non-blocking I/O",
+                "CLI via clap":
+                    "Command-line interface built with the clap argument parser",
+                "Serde serialization":
+                    "Derives Serialize/Deserialize for data structures",
+                "Tracing instrumentation":
+                    "Uses the tracing crate for structured, span-based logging",
+                "no_std compatible":
+                    "Works without the Rust standard library — suitable for embedded or WASM",
+                "WASM target":
+                    "Compiles to WebAssembly for browser or edge runtime deployment",
+                "Property-tested":
+                    "Uses proptest or quickcheck for randomized input testing",
+                "Context propagation":
+                    "Passes context.Context through the call chain for cancellation and deadlines",
+                "Table-driven tests":
+                    "Test cases defined as data tables, iterated by a single test function",
+                "Middleware chain":
+                    "Request processing as a composable chain of middleware functions",
+                "Config via env":
+                    "All configuration read from environment variables",
+                Dockerized:
+                    "Includes Dockerfile with multi-stage build for minimal production image",
+                "Health endpoints":
+                    "Exposes health/readiness endpoints for Kubernetes probes",
+                "Accessible (VoiceOver)":
+                    "Tested with Apple's VoiceOver screen reader",
+                "Dark mode": "Supports dark appearance on iOS/macOS",
+                Localized:
+                    "String extraction and localization for multiple languages",
+                "Adaptive layout":
+                    "Adapts to different device sizes, orientations, and size classes",
+                "Combine reactive":
+                    "Uses Apple's Combine framework for reactive data streams",
+                "Core Data":
+                    "Persistent storage using Apple's Core Data framework",
+                "Widget-ready": "Can be extended with iOS home screen widgets",
+                "Colored output":
+                    "Uses ANSI colors for terminal output — errors red, success green, etc.",
+                "Progress indicators":
+                    "Shows progress bars or spinners for long-running operations",
+                "Quiet/verbose modes":
+                    "Supports -q (quiet) and -v (verbose) flags for output control",
+                "Pipe-friendly":
+                    "Output works cleanly when piped to other commands (no decorations, proper exit codes)",
+                Pagination:
+                    "Large result sets are paginated with cursor or offset-based navigation",
+                "Request logging":
+                    "Logs every request with method, path, status code, and duration",
+                "Versioned routes":
+                    "API routes include version prefix (/v1/, /v2/) for backwards compatibility",
+                "OpenAPI documented":
+                    "Generates or includes OpenAPI/Swagger specification for the API",
+                "Gamepad support":
+                    "Handles gamepad/controller input for game interaction",
+                "Fullscreen toggle":
+                    "Can switch between windowed and fullscreen modes",
+                "Save/load state":
+                    "Game state can be persisted and restored across sessions",
+                "Sound effects":
+                    "Includes audio playback for game events and feedback",
+                "Touch controls":
+                    "Supports touch input for mobile/tablet game play",
+                "Frame-rate independent":
+                    "Game logic uses delta time, not frame count, for consistent behavior",
+                Responsive:
+                    "Adapts layout and behavior to different screen sizes",
+                "International text support":
+                    "Handles Unicode, RTL text, and non-Latin scripts correctly",
+                Accessible:
+                    "Follows accessibility best practices for the platform",
+                "Well-documented":
+                    "Includes clear documentation for public APIs and key decisions",
+                "Documented props":
+                    "Component properties are documented with types and descriptions",
+                "SSR compatible":
+                    "Works with server-side rendering without browser-only APIs",
+                "Offline-capable":
+                    "Functions without network connectivity using service workers or local storage",
+                "Async support":
+                    "Supports async/await patterns for non-blocking operations",
+                "Lifecycle-aware":
+                    "Respects Android Activity/Fragment lifecycle — no leaks, survives config changes",
+                "Room database":
+                    "Uses Room ORM for local SQLite storage with compile-time query validation",
+                "Jetpack Compose":
+                    "Declarative UI with Compose — state-driven, composable functions, Material 3",
+                "Coroutine-safe":
+                    "Properly scoped coroutines — structured concurrency, cancellation-safe, no leaked jobs",
+                "ProGuard/R8 safe":
+                    "Code survives minification — keep rules for reflection, serialization, and JNI",
+                "Material Design":
+                    "Follows Material Design 3 guidelines — components, theming, motion, accessibility",
+                "Deep link support":
+                    "Handles deep links and app links for navigation from external sources",
+                "Offline-first":
+                    "Works offline with local caching, syncs when connectivity returns",
+                "Replication-ready":
+                    "Network replication-aware — properly marks replicated properties and RPCs",
+                "Blueprint-exposed":
+                    "Key APIs exposed to Unreal Blueprints for designer-friendly iteration",
+                "GC-safe":
+                    "Properly references UObjects to prevent garbage collection of live assets",
+                "Slate UI":
+                    "Uses Unreal Slate framework for editor or in-game UI",
+                "Plugin-based":
+                    "Structured as a plugin/module for easy enable/disable and distribution",
+                "Hot-reload safe":
+                    "Survives hot-reload — no static state that breaks on recompile",
+                "Console-portable":
+                    "Works on console platforms — no PC-only APIs, memory budget aware",
+                "Profiler-instrumented":
+                    "Includes profiling markers (TRACE_CPUPROFILER_EVENT_SCOPE, stat groups)",
+                "Memory-safe":
+                    "No buffer overflows, use-after-free, or undefined behavior — validated with sanitizers",
+                "Valgrind-clean":
+                    "Zero memory leaks or errors when run under Valgrind/ASan/MSan",
+                "Header-only option":
+                    "Can be used as a single header include — no separate compilation needed",
+                "CMake build":
+                    "Includes CMakeLists.txt with proper targets, dependencies, and install rules",
+                "POSIX-compatible":
+                    "Uses POSIX APIs for cross-platform Unix/Linux/macOS compatibility",
+                "Thread-safe":
+                    "Safe for concurrent access — uses mutexes, atomics, or lock-free structures",
+                "Static analysis clean":
+                    "Passes clang-tidy, cppcheck, or equivalent static analysis with zero warnings",
+                "Addressable assets":
+                    "Uses Unity Addressables for async asset loading, remote content delivery, and memory management",
+                "Input System":
+                    "Uses Unity's new Input System package — action maps, bindings, processor stacks, multi-device support",
+                "Netcode multiplayer":
+                    "Uses Unity Netcode for GameObjects — NetworkBehaviour, NetworkVariable, RPCs, lobby/relay integration",
+                "Enhanced Input":
+                    "Uses Unreal Enhanced Input — Input Actions, Input Mapping Contexts, modifiers and triggers",
+                "Niagara VFX":
+                    "Uses Unreal Niagara particle system — emitters, modules, data interfaces, GPU simulation",
+                Subsystems:
+                    "Uses Unreal Subsystems (Engine, Editor, GameInstance, World, LocalPlayer) for modular singleton-like services",
+                "Dedicated server":
+                    "Supports Unreal dedicated server build — server-only logic, no rendering, headless mode, anti-cheat aware",
+                "Dependency injection":
+                    "Uses DI framework (Hilt/Dagger for Android, Spring for Java) — constructor injection, scoped lifetimes",
+                "Gradle build":
+                    "Includes properly structured build.gradle with dependencies, flavors, and build types",
+            };
+
+            const errorHandlingPrompts = {
+                "catch-all":
+                    "Wrap every operation in error handling — no exceptions should propagate unhandled. Log all errors with full context.",
+                defensive:
+                    "Use defensive error handling — try/catch at module boundaries, validate all inputs, use structured error types with error codes.",
+                balanced:
+                    "Handle expected failure modes (network, I/O, validation) with clear error messages. Let unexpected errors propagate with stack context.",
+                minimal:
+                    "Only handle errors that are expected and recoverable. Keep the happy path clean — don't clutter code with unlikely failure handling.",
+                "let-crash":
+                    "Fail fast on errors — crash with a clear message rather than attempting recovery. Rely on the runtime or process supervisor to restart.",
+                "result-type":
+                    "Use Result/Either/Option types for all fallible operations — no thrown exceptions. Force callers to handle the error case explicitly.",
+            };
+
+            const secondPassPrompts = {
+                "code-review":
+                    "Perform a thorough self-review: re-read every function for bugs, security issues, missed edge cases, and style violations. Fix any issues found.",
+                test: "Write comprehensive unit tests covering the main logic paths, edge cases, boundary conditions, and error scenarios.",
+                optimize:
+                    "Review for performance. Identify bottlenecks, unnecessary allocations, redundant operations, and optimize critical paths without sacrificing readability.",
+                "security-audit":
+                    "Audit for security vulnerabilities: check for XSS, injection, data exposure, improper authentication, and other OWASP top 10 issues. Fix any found.",
+                "accessibility-audit":
+                    "Audit for accessibility: verify WCAG compliance, check contrast ratios, focus order, screen reader labels, keyboard navigation. Fix any issues.",
+                document:
+                    "Add documentation to all public APIs, inline comments for complex logic, and usage examples where helpful.",
+                refactor:
+                    "Refactor: extract repeated patterns into shared functions, simplify any function over 20 lines, and improve variable/function naming for clarity.",
+                harden: "Harden error handling: add missing try/catch blocks, user-facing error messages for every failure mode, and recovery paths where possible.",
+            };
+
+            const planModifierTips = {
+                "numbered-steps":
+                    "Output as a numbered step-by-step list that an LLM can execute sequentially",
+                "file-by-file":
+                    "Organize the plan by file — list each file to create/modify with its changes",
+                "dependencies-first":
+                    "Order steps so prerequisites come first — no forward references",
+                "include-tests":
+                    "Each implementation step includes its corresponding test case",
+                "checkpoint-validation":
+                    "Add verification checkpoints between steps so the LLM can confirm progress",
+                "minimal-context":
+                    "Each step is self-contained — includes enough context to execute without re-reading prior steps",
+                "diff-format":
+                    "Describe changes as diffs or before/after blocks rather than full file rewrites",
+                "atomic-commits":
+                    "Each step corresponds to one logical commit with a suggested commit message",
+            };
+
+            // ── Domain presets ──
+            const presets = {
+                "HTML/CSS": {
+                    conventions: [
+                        {
+                            value: "w3c",
+                            label: "W3C standards",
+                            prompt: "Follow W3C standards — semantic HTML5 elements, valid markup, and WCAG 2.1 accessibility guidelines.",
+                        },
+                        {
+                            value: "bem",
+                            label: "BEM naming",
+                            prompt: "Use BEM methodology for CSS class naming (Block__Element--Modifier).",
+                        },
+                        {
+                            value: "utility",
+                            label: "Utility-first CSS",
+                            prompt: "Use utility-first CSS approach (Tailwind-style classes).",
+                        },
+                    ],
+                    traits: [
+                        "Responsive layout",
+                        "Semantic HTML",
+                        "Accessible (WCAG 2.1)",
+                        "Print-friendly",
+                        "Dark mode support",
+                        "Mobile-first",
+                        "Keyboard navigable",
+                        "Progressive enhancement",
+                    ],
+                },
+                JavaScript: {
+                    conventions: [
+                        {
+                            value: "es-modules",
+                            label: "ES Modules",
+                            prompt: "Use ES modules (import/export). Modern JavaScript (ES2020+).",
+                        },
+                        {
+                            value: "strict-js",
+                            label: "Strict mode",
+                            prompt: "Use strict mode ('use strict'). Strict equality (===), no implicit globals, no eval, no with statements.",
+                        },
+                        {
+                            value: "jsdoc",
+                            label: "JSDoc typed",
+                            prompt: "Use JSDoc annotations for type documentation.",
+                        },
+                        {
+                            value: "airbnb-js",
+                            label: "Airbnb style",
+                            prompt: "Follow Airbnb JavaScript style guide.",
+                        },
+                    ],
+                    traits: [
+                        "Tree-shakeable",
+                        "Browser + Node compatible",
+                        "No build step",
+                        "Async/await",
+                        "Event-driven",
+                        "Lazy-loaded",
+                    ],
+                },
+                "Unity/C#": {
+                    conventions: [
+                        {
+                            value: "ms-csharp",
+                            label: "Microsoft C# conventions",
+                            prompt: "Follow Microsoft C# coding conventions — PascalCase for public members, XML documentation comments, nullable annotations.",
+                        },
+                        {
+                            value: "unity-style",
+                            label: "Unity best practices",
+                            prompt: "Follow Unity best practices — MonoBehaviour lifecycle patterns, SerializeField for inspector fields, component-based architecture.",
+                        },
+                        {
+                            value: "dots",
+                            label: "Unity DOTS/ECS",
+                            prompt: "Use Unity DOTS patterns — struct-based components, burst-compatible code, job system for parallelism.",
+                        },
+                        {
+                            value: "unity-netcode",
+                            label: "Unity Netcode",
+                            prompt: "Use Unity Netcode for GameObjects — NetworkBehaviour, NetworkVariable for synced state, ServerRpc/ClientRpc for remote calls. Server-authoritative by default.",
+                        },
+                    ],
+                    traits: [
+                        "Object pooling",
+                        "Event-driven",
+                        "Serializable state",
+                        "Editor tooling",
+                        "Gizmo debugging",
+                        "Platform-agnostic",
+                        "Coroutine-safe",
+                        "Scriptable Objects",
+                        "Addressable assets",
+                        "Input System",
+                        "Netcode multiplayer",
+                    ],
+                },
+                "GLSL/Shaders": {
+                    conventions: [
+                        {
+                            value: "glsl-es",
+                            label: "GLSL ES 3.0",
+                            prompt: "Target GLSL ES 3.0 — precision qualifiers, no implicit casts, mobile-compatible.",
+                        },
+                        {
+                            value: "hlsl",
+                            label: "HLSL (DirectX/Unity)",
+                            prompt: "Use HLSL shader conventions — semantics annotations, cbuffer layout, Unity shader macros.",
+                        },
+                        {
+                            value: "shader-graph",
+                            label: "Shader Graph compatible",
+                            prompt: "Structure for Shader Graph custom function nodes — clear inputs/outputs, no side effects.",
+                        },
+                    ],
+                    traits: [
+                        "GPU-optimized",
+                        "Branching-free",
+                        "LOD-aware",
+                        "Instancing support",
+                        "Multi-pass",
+                        "Cross-platform graphics API",
+                    ],
+                },
+                "React/TypeScript": {
+                    conventions: [
+                        {
+                            value: "strict-ts",
+                            label: "Strict TypeScript",
+                            prompt: "Use TypeScript strict mode — no any, exhaustive switch checks, discriminated unions.",
+                        },
+                        {
+                            value: "react-hooks",
+                            label: "React Hooks patterns",
+                            prompt: "Functional components with hooks. Custom hooks for shared logic. Named exports.",
+                        },
+                        {
+                            value: "nextjs",
+                            label: "Next.js conventions",
+                            prompt: "Follow Next.js app router conventions — server components by default, file-based routing, server actions.",
+                        },
+                    ],
+                    traits: [
+                        "Accessible (ARIA)",
+                        "Responsive",
+                        "SSR compatible",
+                        "Keyboard navigable",
+                        "Themeable",
+                        "Lazy-loaded",
+                        "Error boundaries",
+                        "Memoized renders",
+                    ],
+                },
+                Python: {
+                    conventions: [
+                        {
+                            value: "pep8",
+                            label: "PEP 8",
+                            prompt: "Follow PEP 8. Use type hints throughout. Include docstrings for public APIs.",
+                        },
+                        {
+                            value: "google-py",
+                            label: "Google Python style",
+                            prompt: "Follow Google Python Style Guide — Google-style docstrings, absolute imports, import sorting.",
+                        },
+                        {
+                            value: "scientific",
+                            label: "Scientific Python",
+                            prompt: "Follow Scientific Python conventions — NumPy-style docstrings, vectorized operations, notebook-friendly outputs.",
+                        },
+                    ],
+                    traits: [
+                        "Type-annotated",
+                        "CLI-ready",
+                        "Async support",
+                        "Logging",
+                        "Config file support",
+                        "Pip-installable",
+                        "Cross-platform",
+                        "Doctest examples",
+                    ],
+                },
+                "Node.js": {
+                    conventions: [
+                        {
+                            value: "node-std",
+                            label: "Node.js best practices",
+                            prompt: "Use ES modules (import/export). Async/await for all I/O. Structured error handling with error codes.",
+                        },
+                        {
+                            value: "express",
+                            label: "Express conventions",
+                            prompt: "Follow Express conventions — middleware chain pattern, router modules, centralized error handler.",
+                        },
+                        {
+                            value: "fastify",
+                            label: "Fastify patterns",
+                            prompt: "Use Fastify patterns — JSON schema validation, plugin architecture, decorator pattern.",
+                        },
+                    ],
+                    traits: [
+                        "Graceful shutdown",
+                        "Structured logging",
+                        "Health checks",
+                        "Rate limiting",
+                        "CORS configured",
+                        "Environment-based config",
+                        "Stream processing",
+                        "Cluster-ready",
+                    ],
+                },
+                Rust: {
+                    conventions: [
+                        {
+                            value: "rust-api",
+                            label: "Rust API guidelines",
+                            prompt: "Follow Rust API guidelines — idiomatic naming, From/Into trait implementations, descriptive error enums.",
+                        },
+                        {
+                            value: "clippy",
+                            label: "Clippy-clean",
+                            prompt: "Code must pass all default Clippy lints. No unsafe blocks without justification comments.",
+                        },
+                        {
+                            value: "embedded",
+                            label: "Embedded/no_std",
+                            prompt: "Target no_std — zero heap allocation, panic-free error handling, fixed-size buffers.",
+                        },
+                    ],
+                    traits: [
+                        "Zero-copy",
+                        "Async runtime",
+                        "CLI via clap",
+                        "Serde serialization",
+                        "Tracing instrumentation",
+                        "no_std compatible",
+                        "WASM target",
+                        "Property-tested",
+                    ],
+                },
+                Go: {
+                    conventions: [
+                        {
+                            value: "effective-go",
+                            label: "Effective Go",
+                            prompt: "Follow Effective Go — stdlib idioms, short variable names in tight scope, accept interfaces return structs.",
+                        },
+                        {
+                            value: "uber-go",
+                            label: "Uber Go style",
+                            prompt: "Follow Uber Go Style Guide — structured errors with %w, functional options pattern, zap for logging.",
+                        },
+                        {
+                            value: "google-go",
+                            label: "Google Go style",
+                            prompt: "Follow Google Go Style — package-level documentation, table-driven tests, protobuf for serialization.",
+                        },
+                    ],
+                    traits: [
+                        "Context propagation",
+                        "Structured logging",
+                        "Graceful shutdown",
+                        "Health endpoints",
+                        "Table-driven tests",
+                        "Middleware chain",
+                        "Config via env",
+                        "Dockerized",
+                    ],
+                },
+                "Swift/iOS": {
+                    conventions: [
+                        {
+                            value: "apple-swift",
+                            label: "Apple Swift guidelines",
+                            prompt: "Follow Apple Swift API Design Guidelines — clarity at point of use, protocol-oriented design, value semantics.",
+                        },
+                        {
+                            value: "swiftui",
+                            label: "SwiftUI patterns",
+                            prompt: "Use SwiftUI declarative patterns — @State/@Binding for data flow, environment objects, view composition.",
+                        },
+                        {
+                            value: "uikit",
+                            label: "UIKit conventions",
+                            prompt: "Follow UIKit conventions — delegation pattern, coordinator navigation, programmatic Auto Layout.",
+                        },
+                    ],
+                    traits: [
+                        "Accessible (VoiceOver)",
+                        "Dark mode",
+                        "Localized",
+                        "Adaptive layout",
+                        "Combine reactive",
+                        "Async/await",
+                        "Core Data",
+                        "Widget-ready",
+                    ],
+                },
+                "Java/Kotlin/Android": {
+                    conventions: [
+                        {
+                            value: "google-java",
+                            label: "Google Java Style",
+                            prompt: "Follow Google Java Style Guide — 4-space indent, Javadoc on public APIs, static imports last.",
+                        },
+                        {
+                            value: "kotlin-idioms",
+                            label: "Kotlin idioms",
+                            prompt: "Use idiomatic Kotlin — data classes, sealed classes, extension functions, coroutines for async, null safety via nullable types.",
+                        },
+                        {
+                            value: "android-arch",
+                            label: "Android Architecture",
+                            prompt: "Follow Android Architecture Components — ViewModel, LiveData/StateFlow, Repository pattern, single-Activity navigation.",
+                        },
+                        {
+                            value: "spring-boot",
+                            label: "Spring Boot",
+                            prompt: "Follow Spring Boot conventions — annotation-driven (@RestController, @Service, @Repository), auto-configuration, starter dependencies, application.yml config.",
+                        },
+                    ],
+                    traits: [
+                        "Lifecycle-aware",
+                        "Room database",
+                        "Jetpack Compose",
+                        "Coroutine-safe",
+                        "ProGuard/R8 safe",
+                        "Material Design",
+                        "Deep link support",
+                        "Offline-first",
+                        "Dependency injection",
+                        "Gradle build",
+                    ],
+                },
+                "Unreal/C++": {
+                    conventions: [
+                        {
+                            value: "epic-cpp",
+                            label: "Epic C++ conventions",
+                            prompt: "Follow Epic C++ Coding Standard — prefix classes with U/A/F/S, UPROPERTY/UFUNCTION macros, no STL containers (use TArray, TMap).",
+                        },
+                        {
+                            value: "unreal-gameplay",
+                            label: "Unreal Gameplay Framework",
+                            prompt: "Use Unreal Gameplay Framework patterns — AActor, UActorComponent, GameplayAbilitySystem, replication-aware code.",
+                        },
+                        {
+                            value: "blueprint-friendly",
+                            label: "Blueprint-friendly",
+                            prompt: "Expose key functions and properties to Blueprints — use UFUNCTION(BlueprintCallable), UPROPERTY(EditAnywhere), category metadata.",
+                        },
+                        {
+                            value: "unreal-network",
+                            label: "Unreal Networking",
+                            prompt: "Use Unreal networking — UPROPERTY(Replicated), Server/Client/NetMulticast RPCs, server-authoritative game state. Mark NetRole and ownership correctly.",
+                        },
+                    ],
+                    traits: [
+                        "Replication-ready",
+                        "Blueprint-exposed",
+                        "GC-safe",
+                        "Slate UI",
+                        "Plugin-based",
+                        "Hot-reload safe",
+                        "Console-portable",
+                        "Profiler-instrumented",
+                        "Enhanced Input",
+                        "Niagara VFX",
+                        "Subsystems",
+                        "Dedicated server",
+                    ],
+                },
+                "C/C++": {
+                    conventions: [
+                        {
+                            value: "c11",
+                            label: "Modern C (C11/C17)",
+                            prompt: "Use modern C standards (C11/C17) — _Static_assert, anonymous structs, stdatomic, designated initializers.",
+                        },
+                        {
+                            value: "cpp17",
+                            label: "Modern C++ (C++17)",
+                            prompt: "Use modern C++17 — RAII, smart pointers, std::optional, structured bindings, constexpr, no raw new/delete.",
+                        },
+                        {
+                            value: "google-cpp",
+                            label: "Google C++ Style",
+                            prompt: "Follow Google C++ Style Guide — 2-space indent, snake_case functions, CamelCase types, explicit constructors, no exceptions.",
+                        },
+                        {
+                            value: "misra-c",
+                            label: "MISRA C (safety-critical)",
+                            prompt: "Follow MISRA C guidelines — no dynamic memory, no recursion, restricted pointer arithmetic, all branches explicitly handled. Safety-critical embedded.",
+                        },
+                    ],
+                    traits: [
+                        "Memory-safe",
+                        "Valgrind-clean",
+                        "Header-only option",
+                        "CMake build",
+                        "Cross-platform",
+                        "POSIX-compatible",
+                        "Thread-safe",
+                        "Static analysis clean",
+                    ],
+                },
+            };
+
+            // ── Quality options ──
+            const qualityOptions = [
+                {
+                    value: "secure",
+                    label: "Secure",
+                    prompt: "Prioritize security and safe handling of all inputs.",
+                },
+                {
+                    value: "performant",
+                    label: "Performant",
+                    prompt: "Optimize for performance and efficiency.",
+                },
+                {
+                    value: "readable",
+                    label: "Readable",
+                    prompt: "Prioritize readable, maintainable code.",
+                },
+                {
+                    value: "robust",
+                    label: "Robust",
+                    prompt: "Anticipate edge cases — handle empty inputs, boundary values, concurrent access, and unexpected state transitions.",
+                },
+                {
+                    value: "testable",
+                    label: "Testable",
+                    prompt: "Structure for easy testing with clear interfaces.",
+                },
+                {
+                    value: "accessible",
+                    label: "Accessible",
+                    prompt: "Ensure full accessibility — screen readers, keyboard navigation, ARIA semantics.",
+                },
+                {
+                    value: "portable",
+                    label: "Portable",
+                    prompt: "Maximize portability across platforms and environments.",
+                },
+                {
+                    value: "modular",
+                    label: "Modular",
+                    prompt: "Structure as independent, reusable modules — single responsibility per module, clear public APIs, no circular dependencies.",
+                },
+            ];
+
+            // ── Plan modifiers ──
+            const planModifiers = [
+                {
+                    value: "numbered-steps",
+                    label: "Numbered steps",
+                    prompt: "Output as a numbered step-by-step implementation plan.",
+                },
+                {
+                    value: "file-by-file",
+                    label: "File-by-file",
+                    prompt: "Organize the plan by file — list each file to create or modify with its specific changes.",
+                },
+                {
+                    value: "dependencies-first",
+                    label: "Dependencies first",
+                    prompt: "Order steps so prerequisites come before dependents — no forward references.",
+                },
+                {
+                    value: "include-tests",
+                    label: "Include tests per step",
+                    prompt: "Each implementation step should include its corresponding test case.",
+                },
+                {
+                    value: "checkpoint-validation",
+                    label: "Checkpoints",
+                    prompt: "Add verification checkpoints between steps so progress can be validated before continuing.",
+                },
+                {
+                    value: "minimal-context",
+                    label: "Self-contained steps",
+                    prompt: "Each step must be self-contained with enough context to execute independently.",
+                },
+                {
+                    value: "diff-format",
+                    label: "Diff format",
+                    prompt: "Describe changes as before/after diffs rather than full file contents.",
+                },
+                {
+                    value: "atomic-commits",
+                    label: "Atomic commits",
+                    prompt: "Each step corresponds to one atomic commit — include a suggested commit message.",
+                },
+            ];
+
+            // ── Input options ──
+            const inputOptions = {
+                secure: [
+                    {
+                        value: "untrusted",
+                        prompt: "Handle untrusted user input — sanitize and validate all data.",
+                    },
+                    {
+                        value: "semi-trusted",
+                        prompt: "Input is semi-trusted — validate structure, not intent.",
+                    },
+                    {
+                        value: "internal",
+                        prompt: "Internal input only — validate types at boundaries.",
+                    },
+                    { value: "none", prompt: "" },
+                ],
+                performant: [
+                    {
+                        value: "high-volume",
+                        prompt: "Handle high-volume input efficiently — stream where possible.",
+                    },
+                    {
+                        value: "untrusted",
+                        prompt: "Handle untrusted user input — validate without performance penalty.",
+                    },
+                    {
+                        value: "internal",
+                        prompt: "Internal input only — trust callers, optimize throughput.",
+                    },
+                    { value: "none", prompt: "" },
+                ],
+                robust: [
+                    {
+                        value: "untrusted",
+                        prompt: "Handle untrusted user input — reject malformed data early with clear errors.",
+                    },
+                    {
+                        value: "semi-trusted",
+                        prompt: "Input is semi-trusted — validate and provide helpful error messages.",
+                    },
+                    {
+                        value: "internal",
+                        prompt: "Internal input only — use assertions at boundaries.",
+                    },
+                    { value: "none", prompt: "" },
+                ],
+                _default: [
+                    {
+                        value: "untrusted",
+                        prompt: "Handle untrusted user input.",
+                    },
+                    {
+                        value: "semi-trusted",
+                        prompt: "Input is semi-trusted — validate structure.",
+                    },
+                    { value: "internal", prompt: "Internal input only." },
+                    { value: "none", prompt: "" },
+                ],
+            };
+
+            // ── Type options ──
+            const typeOptions = {
+                Build: [
+                    "a web application",
+                    "a CLI tool",
+                    "an API endpoint",
+                    "a reusable component",
+                    "a library",
+                    "a game",
+                    "a mobile screen",
+                    "a desktop tool",
+                ],
+                Implement: [
+                    "a feature",
+                    "an algorithm",
+                    "an integration",
+                    "an event handler",
+                    "a data pipeline",
+                    "a plugin",
+                    "a middleware",
+                ],
+                Create: [
+                    "a utility function",
+                    "a module",
+                    "a page",
+                    "a form",
+                    "a dashboard",
+                    "a script",
+                    "a config system",
+                ],
+                Design: [
+                    "a system architecture",
+                    "a database schema",
+                    "an interface contract",
+                    "a state machine",
+                    "a protocol",
+                ],
+                Plan: [
+                    "a feature implementation",
+                    "a system migration",
+                    "a refactoring effort",
+                    "a new module",
+                    "an API redesign",
+                    "a testing strategy",
+                    "a performance optimization",
+                    "a security hardening",
+                    "a deployment pipeline",
+                ],
+                Optimize: [
+                    "runtime performance",
+                    "memory usage",
+                    "load time",
+                    "bundle size",
+                    "database queries",
+                    "render performance",
+                    "API response time",
+                    "startup time",
+                    "throughput",
+                    "resource consumption",
+                ],
+                Refactor: [
+                    "a module",
+                    "a function",
+                    "a component",
+                    "a test suite",
+                    "a build pipeline",
+                ],
+            };
+
+            const scopeOptions = {
+                "a web application": [
+                    {
+                        value: "single-file",
+                        prompt: "Single HTML file, no frameworks.",
+                    },
+                    {
+                        value: "minimal-deps",
+                        prompt: "Minimal dependencies, no heavy frameworks.",
+                    },
+                    {
+                        value: "framework",
+                        prompt: "Use an appropriate modern framework.",
+                    },
+                ],
+                "a CLI tool": [
+                    {
+                        value: "single-file-std",
+                        prompt: "Single file, standard library only.",
+                    },
+                    {
+                        value: "with-args",
+                        prompt: "Single file with argument parsing.",
+                    },
+                    {
+                        value: "multi-file",
+                        prompt: "Organized multi-file structure.",
+                    },
+                ],
+                "an API endpoint": [
+                    {
+                        value: "minimal-server",
+                        prompt: "Minimal server, no ORM.",
+                    },
+                    {
+                        value: "light-framework",
+                        prompt: "Lightweight framework with routing.",
+                    },
+                    {
+                        value: "full-framework",
+                        prompt: "Full framework with middleware and validation.",
+                    },
+                ],
+                "a game": [
+                    {
+                        value: "single-file-game",
+                        prompt: "Single file, canvas-based, no engine.",
+                    },
+                    {
+                        value: "engine-based",
+                        prompt: "Use the project's game engine.",
+                    },
+                    {
+                        value: "ecs",
+                        prompt: "Entity-component-system architecture.",
+                    },
+                ],
+                _default: [
+                    {
+                        value: "minimal",
+                        prompt: "Keep scope minimal and focused.",
+                    },
+                    {
+                        value: "moderate",
+                        prompt: "Moderate scope with clean boundaries.",
+                    },
+                    {
+                        value: "comprehensive",
+                        prompt: "Comprehensive implementation with full structure.",
+                    },
+                ],
+            };
+
+            // ── Project structure options (per preset/type) ──
+            const structureOptions = {
+                "HTML/CSS": [
+                    {
+                        value: "flat-html",
+                        label: "Flat — index.html, styles.css, script.js",
+                        prompt: "Use a flat file structure: index.html, styles.css, script.js in the root directory.",
+                    },
+                    {
+                        value: "web-standard",
+                        label: "Standard web — public/, src/, dist/",
+                        prompt: "Use standard web project structure: public/ (static assets, index.html), src/ (JS modules, components, styles), dist/ (build output).",
+                    },
+                    {
+                        value: "component-web",
+                        label: "Component-based — src/components/, src/styles/, src/utils/",
+                        prompt: "Organize by component: src/components/ (one folder per component with its HTML/CSS/JS), src/styles/ (shared styles), src/utils/ (helpers).",
+                    },
+                ],
+                JavaScript: [
+                    {
+                        value: "flat-js",
+                        label: "Flat — single entry + modules",
+                        prompt: "Use a flat structure: index.js (entry), lib/ (modules), package.json.",
+                    },
+                    {
+                        value: "src-lib",
+                        label: "src/ + lib/ + tests/",
+                        prompt: "Use src/ for source modules, lib/ for compiled output, tests/ for test files, package.json at root.",
+                    },
+                    {
+                        value: "monorepo-js",
+                        label: "Monorepo — packages/",
+                        prompt: "Use monorepo structure: packages/{name}/src/, packages/{name}/tests/, shared tooling at root.",
+                    },
+                ],
+                "React/TypeScript": [
+                    {
+                        value: "nextjs-app",
+                        label: "Next.js App Router — app/, components/, lib/",
+                        prompt: "Use Next.js app router layout: app/ (routes and pages), app/api/ (API routes), components/ (shared UI), lib/ (utilities and helpers), public/ (static assets), types/ (TypeScript types).",
+                    },
+                    {
+                        value: "react-feature",
+                        label: "Feature-based — src/features/, src/components/",
+                        prompt: "Organize by feature: src/features/{name}/ (component, hook, test, types per feature), src/components/ (shared UI), src/hooks/ (shared hooks), src/types/ (global types).",
+                    },
+                    {
+                        value: "react-flat",
+                        label: "Flat React — src/components/, src/hooks/, src/pages/",
+                        prompt: "Use flat React structure: src/components/ (UI), src/hooks/ (custom hooks), src/pages/ (route components), src/utils/, src/types/.",
+                    },
+                ],
+                "Unity/C#": [
+                    {
+                        value: "unity-standard",
+                        label: "Unity standard — Assets/Scripts/, Prefabs/, Scenes/",
+                        prompt: "Use Unity best-practice folder structure: Assets/Scripts/{Feature}/ (C# by feature), Assets/Prefabs/, Assets/Materials/, Assets/Scenes/, Assets/Resources/, Assets/Editor/ (editor-only scripts), Assets/Plugins/ (third-party), Assets/ScriptableObjects/.",
+                    },
+                    {
+                        value: "unity-assembly",
+                        label: "Assembly-based — per assembly definition",
+                        prompt: "Organize by assembly definition: Assets/{AssemblyName}/ with Runtime/ and Editor/ subfolders, each with its own .asmdef. Separates compilation units for faster builds.",
+                    },
+                    {
+                        value: "unity-dots",
+                        label: "DOTS — Components/, Systems/, Authoring/",
+                        prompt: "Use DOTS-oriented layout: Assets/Scripts/Components/ (IComponentData structs), Assets/Scripts/Systems/ (SystemBase classes), Assets/Scripts/Authoring/ (MonoBehaviour authoring).",
+                    },
+                ],
+                "Unreal/C++": [
+                    {
+                        value: "unreal-module",
+                        label: "Module-based — Source/{Module}/Public/, Private/",
+                        prompt: "Use Unreal module structure: Source/{Module}/Public/ (headers, .h), Source/{Module}/Private/ (implementation, .cpp), {Module}.Build.cs. Content/ for assets.",
+                    },
+                    {
+                        value: "unreal-gameplay",
+                        label: "Gameplay — Characters/, Abilities/, Components/",
+                        prompt: "Use gameplay-oriented layout: Source/{Game}/Public/Characters/, Abilities/, Components/, GameModes/, UI/, Weapons/ with matching Private/ folders. Content/Blueprints/, Content/DataAssets/.",
+                    },
+                    {
+                        value: "unreal-plugin",
+                        label: "Plugin — {Plugin}/Source/, Resources/, Content/",
+                        prompt: "Use Unreal plugin structure: Plugins/{Name}/Source/{Name}/Public/, Private/, {Name}.uplugin, Plugins/{Name}/Content/, Plugins/{Name}/Resources/.",
+                    },
+                ],
+                Python: [
+                    {
+                        value: "py-package",
+                        label: "Package — src/{pkg}/, tests/, pyproject.toml",
+                        prompt: "Use Python package layout: src/{package_name}/ (source), src/{package_name}/__init__.py, tests/, pyproject.toml, README.md.",
+                    },
+                    {
+                        value: "py-flat",
+                        label: "Flat script — single file + requirements.txt",
+                        prompt: "Use flat layout: main.py (entry), utils.py (helpers), requirements.txt.",
+                    },
+                    {
+                        value: "py-scientific",
+                        label: "Scientific — notebooks/, data/, src/, tests/",
+                        prompt: "Use scientific project layout: notebooks/ (Jupyter), data/ (raw and processed), src/{package}/ (reusable code), tests/, environment.yml or requirements.txt.",
+                    },
+                ],
+                "Node.js": [
+                    {
+                        value: "node-mvc",
+                        label: "MVC — src/routes/, controllers/, models/",
+                        prompt: "Use MVC layout: src/routes/ (route definitions), src/controllers/ (request handlers), src/models/ (data models), src/middleware/, src/utils/, config/, tests/.",
+                    },
+                    {
+                        value: "node-modular",
+                        label: "Modular — src/modules/{feature}/",
+                        prompt: "Use modular layout: src/modules/{feature}/ (each feature has its own route, controller, model, test), src/shared/ (common utilities), config/.",
+                    },
+                    {
+                        value: "node-serverless",
+                        label: "Serverless — functions/, shared/, config/",
+                        prompt: "Use serverless layout: functions/{name}/ (one folder per function/endpoint), shared/ (common utilities), config/, serverless.yml or template.yaml.",
+                    },
+                ],
+                Go: [
+                    {
+                        value: "go-standard",
+                        label: "Standard Go — cmd/, internal/, pkg/",
+                        prompt: "Use standard Go project layout: cmd/{app}/main.go (entry points), internal/ (private packages), pkg/ (public packages), go.mod, go.sum.",
+                    },
+                    {
+                        value: "go-flat",
+                        label: "Flat — single package at root",
+                        prompt: "Use flat Go layout: all .go files in the root package, go.mod, *_test.go files alongside source.",
+                    },
+                    {
+                        value: "go-service",
+                        label: "Service — cmd/, internal/handler/, internal/service/, internal/repo/",
+                        prompt: "Use service-oriented layout: cmd/{app}/, internal/handler/ (HTTP), internal/service/ (business logic), internal/repository/ (data access), internal/model/, config/.",
+                    },
+                ],
+                Rust: [
+                    {
+                        value: "rust-lib",
+                        label: "Library — src/lib.rs, src/{module}/",
+                        prompt: "Use Rust library layout: src/lib.rs (crate root), src/{module}.rs or src/{module}/mod.rs, tests/ (integration tests), benches/, examples/.",
+                    },
+                    {
+                        value: "rust-workspace",
+                        label: "Workspace — crates/{name}/",
+                        prompt: "Use Rust workspace: Cargo.toml (workspace), crates/{name}/src/ (member crates), shared tests and config at root.",
+                    },
+                    {
+                        value: "rust-binary",
+                        label: "Binary — src/main.rs, src/cli.rs, src/lib.rs",
+                        prompt: "Use binary crate layout: src/main.rs (entry), src/cli.rs (argument parsing), src/lib.rs (library logic), tests/, Cargo.toml.",
+                    },
+                ],
+                "Swift/iOS": [
+                    {
+                        value: "swift-mvvm",
+                        label: "MVVM — Views/, ViewModels/, Models/, Services/",
+                        prompt: "Use MVVM layout: {App}/Views/ (SwiftUI views), {App}/ViewModels/, {App}/Models/ (data types), {App}/Services/ (networking, persistence), {App}/Resources/ (assets).",
+                    },
+                    {
+                        value: "swift-spm",
+                        label: "Swift Package — Sources/{Module}/, Tests/",
+                        prompt: "Use Swift Package Manager layout: Sources/{Module}/ (source), Tests/{Module}Tests/, Package.swift.",
+                    },
+                    {
+                        value: "swift-feature",
+                        label: "Feature modules — Features/{Name}/",
+                        prompt: "Use feature-based layout: Features/{Name}/Views/, Features/{Name}/ViewModels/, Shared/ (common components), Core/ (networking, persistence, models).",
+                    },
+                ],
+                "Java/Kotlin/Android": [
+                    {
+                        value: "android-clean",
+                        label: "Clean Architecture — ui/, domain/, data/",
+                        prompt: "Use Clean Architecture layout: app/src/main/java/{pkg}/ui/ (Activities, Fragments, Composables), domain/ (use cases, entities), data/ (repositories, data sources), di/ (dependency injection modules), app/src/main/res/.",
+                    },
+                    {
+                        value: "android-feature",
+                        label: "Feature modules — feature/{name}/",
+                        prompt: "Use feature module layout: feature/{name}/ (self-contained modules with ui/, data/, domain/), core/ (shared utilities), app/ (main module wiring).",
+                    },
+                    {
+                        value: "spring-layered",
+                        label: "Spring Boot — controller/, service/, repository/",
+                        prompt: "Use Spring Boot layered layout: src/main/java/{pkg}/controller/ (REST endpoints), service/ (business logic), repository/ (data access), model/ (entities, DTOs), config/ (Spring config classes).",
+                    },
+                ],
+                "C/C++": [
+                    {
+                        value: "c-standard",
+                        label: "Standard C/C++ — src/, include/, tests/",
+                        prompt: "Use standard C/C++ layout: src/ (implementation .c/.cpp), include/{project}/ (public headers .h/.hpp), tests/, CMakeLists.txt, cmake/ (modules).",
+                    },
+                    {
+                        value: "c-embedded",
+                        label: "Embedded — src/, drivers/, hal/, include/",
+                        prompt: "Use embedded layout: src/ (application), drivers/ (peripheral drivers), hal/ (hardware abstraction), include/ (headers), linker/ (linker scripts), tests/.",
+                    },
+                    {
+                        value: "c-header-only",
+                        label: "Header-only library — include/{lib}/",
+                        prompt: "Use header-only layout: include/{library}/ (all headers), tests/, examples/, CMakeLists.txt, single-header option via amalgamation.",
+                    },
+                ],
+                "GLSL/Shaders": [
+                    {
+                        value: "shader-standard",
+                        label: "Shaders/ — *.vert, *.frag, includes/",
+                        prompt: "Use shader layout: Shaders/ (*.vert, *.frag, *.comp), Shaders/includes/ (shared functions and utilities), Shaders/postprocess/ (post-processing shaders).",
+                    },
+                    {
+                        value: "shader-unity",
+                        label: "Unity Shaders — Assets/Shaders/, SubGraphs/",
+                        prompt: "Use Unity shader layout: Assets/Shaders/ (*.shader, *.hlsl), Assets/Shaders/Includes/ (shared .hlsl), Assets/Shaders/SubGraphs/ (Shader Graph sub-graphs), Assets/Shaders/CustomFunctions/.",
+                    },
+                ],
+                _default: [
+                    {
+                        value: "flat",
+                        label: "Flat — all files in root",
+                        prompt: "Use a flat file structure with all source files in the root directory.",
+                    },
+                    {
+                        value: "src-tests",
+                        label: "src/ + tests/",
+                        prompt: "Use src/ for source code and tests/ for test files.",
+                    },
+                    {
+                        value: "feature-based",
+                        label: "Feature-based — src/{feature}/",
+                        prompt: "Organize by feature: src/{feature}/ with each feature containing its own source, tests, and types.",
+                    },
+                ],
+            };
+
+            // ── Tooling & platform options (per preset) ──
+            const toolingOptions = {
+                "HTML/CSS": [
+                    {
+                        value: "vite",
+                        label: "Vite",
+                        prompt: "Use Vite as the build tool and dev server.",
+                        tip: "Fast HMR dev server and optimized production builds using native ES modules",
+                    },
+                    {
+                        value: "sass",
+                        label: "Sass/SCSS",
+                        prompt: "Use Sass (SCSS syntax) for CSS preprocessing.",
+                        tip: "CSS preprocessor: variables, nesting, mixins, partials, and modular imports",
+                    },
+                    {
+                        value: "postcss",
+                        label: "PostCSS",
+                        prompt: "Use PostCSS for CSS transformations with autoprefixer.",
+                        tip: "Plugin-based CSS transformer: autoprefixer, nesting, custom properties polyfill",
+                    },
+                    {
+                        value: "browser-target",
+                        label: "Modern browsers",
+                        prompt: "Target modern browsers (last 2 versions, no IE).",
+                        tip: "ES2020+, CSS grid, custom properties — no legacy polyfills needed",
+                    },
+                ],
+                JavaScript: [
+                    {
+                        value: "esbuild",
+                        label: "esbuild",
+                        prompt: "Use esbuild for bundling and transpilation.",
+                        tip: "Extremely fast JS/TS bundler written in Go — 10-100x faster than webpack",
+                    },
+                    {
+                        value: "webpack",
+                        label: "Webpack",
+                        prompt: "Use Webpack for bundling with appropriate loaders and plugins.",
+                        tip: "Mature bundler with large plugin ecosystem — code splitting, tree shaking, HMR",
+                    },
+                    {
+                        value: "rollup",
+                        label: "Rollup",
+                        prompt: "Use Rollup for library bundling with tree-shaking.",
+                        tip: "Library-focused bundler optimized for ES modules and minimal output size",
+                    },
+                    {
+                        value: "nodejs-target",
+                        label: "Node.js target",
+                        prompt: "Target Node.js runtime.",
+                        tip: "Server-side JS: access to fs, net, process, native modules",
+                    },
+                    {
+                        value: "electron",
+                        label: "Electron",
+                        prompt: "Target Electron for cross-platform desktop application.",
+                        tip: "Desktop apps with web tech: Chromium + Node.js, main/renderer process model",
+                    },
+                    {
+                        value: "deno",
+                        label: "Deno",
+                        prompt: "Target Deno runtime with URL imports and permissions model.",
+                        tip: "Secure JS/TS runtime: URL imports, built-in TypeScript, permissions-based security",
+                    },
+                    {
+                        value: "bun",
+                        label: "Bun",
+                        prompt: "Target Bun runtime for fast startup and native bundling.",
+                        tip: "All-in-one JS runtime: fast startup, built-in bundler, test runner, package manager",
+                    },
+                ],
+                "React/TypeScript": [
+                    {
+                        value: "vite-react",
+                        label: "Vite",
+                        prompt: "Use Vite with React plugin for development and builds.",
+                        tip: "Fast dev server with React Fast Refresh and optimized production builds",
+                    },
+                    {
+                        value: "nextjs-tool",
+                        label: "Next.js",
+                        prompt: "Use Next.js as the full-stack React framework.",
+                        tip: "React meta-framework: SSR, SSG, API routes, file-based routing, edge runtime",
+                    },
+                    {
+                        value: "tailwind",
+                        label: "Tailwind CSS",
+                        prompt: "Use Tailwind CSS for utility-first styling.",
+                        tip: "Utility-first CSS framework: composable classes, JIT compilation, design tokens",
+                    },
+                    {
+                        value: "zustand",
+                        label: "Zustand",
+                        prompt: "Use Zustand for lightweight state management.",
+                        tip: "Minimal React state management: hooks-based, no providers, no boilerplate",
+                    },
+                    {
+                        value: "tanstack-query",
+                        label: "TanStack Query",
+                        prompt: "Use TanStack Query for server state management and data fetching.",
+                        tip: "Async data management: caching, deduplication, background refetch, optimistic updates",
+                    },
+                    {
+                        value: "vercel",
+                        label: "Deploy to Vercel",
+                        prompt: "Target Vercel for deployment — use edge functions where appropriate.",
+                        tip: "Serverless hosting optimized for Next.js: edge functions, ISR, preview deploys",
+                    },
+                ],
+                "Unity/C#": [
+                    {
+                        value: "unity-urp",
+                        label: "URP",
+                        prompt: "Target Universal Render Pipeline (URP).",
+                        tip: "Unity's lightweight render pipeline: optimized for mobile/VR, shader graph, post-processing",
+                    },
+                    {
+                        value: "unity-hdrp",
+                        label: "HDRP",
+                        prompt: "Target High Definition Render Pipeline (HDRP).",
+                        tip: "Unity's high-fidelity pipeline: physically-based rendering, ray tracing, volumetric effects",
+                    },
+                    {
+                        value: "unity-mobile",
+                        label: "Mobile target",
+                        prompt: "Target mobile platforms (iOS/Android) — optimize for battery, thermal, and memory constraints.",
+                        tip: "Mobile considerations: draw call budget, texture compression, input touch, thermal throttling",
+                    },
+                    {
+                        value: "unity-vr",
+                        label: "VR target",
+                        prompt: "Target VR platforms — maintain 72+ FPS, use XR Interaction Toolkit.",
+                        tip: "VR requirements: stereoscopic rendering, motion controllers, spatial interaction, performance budget",
+                    },
+                    {
+                        value: "addressables",
+                        label: "Addressables",
+                        prompt: "Use Unity Addressables for asset loading and memory management.",
+                        tip: "Async asset loading: content catalogs, remote bundles, reference counting, memory management",
+                    },
+                    {
+                        value: "unitask",
+                        label: "UniTask",
+                        prompt: "Use UniTask for allocation-free async/await in Unity.",
+                        tip: "Zero-allocation async for Unity: PlayerLoop integration, cancellation tokens, no Task overhead",
+                    },
+                ],
+                "Unreal/C++": [
+                    {
+                        value: "ue-target-pc",
+                        label: "PC target",
+                        prompt: "Target PC (Windows/Linux/macOS).",
+                        tip: "Desktop platform: DX11/DX12/Vulkan, keyboard/mouse + gamepad input, uncapped performance",
+                    },
+                    {
+                        value: "ue-target-console",
+                        label: "Console target",
+                        prompt: "Target consoles — respect TRC/XR requirements and memory budgets.",
+                        tip: "Console platform: certification requirements, fixed memory budget, platform-specific APIs",
+                    },
+                    {
+                        value: "ue-target-mobile",
+                        label: "Mobile target",
+                        prompt: "Target mobile — Vulkan/Metal, aggressive LOD, reduced draw calls.",
+                        tip: "Mobile UE: thermal management, battery awareness, ES3.1/Vulkan, touch input",
+                    },
+                    {
+                        value: "ue-chaos",
+                        label: "Chaos Physics",
+                        prompt: "Use Chaos physics engine for destruction and simulation.",
+                        tip: "Unreal's physics system: rigid bodies, destruction, cloth, fluid, multi-threaded solver",
+                    },
+                    {
+                        value: "ue-niagara",
+                        label: "Niagara VFX",
+                        prompt: "Use Niagara particle system for visual effects.",
+                        tip: "GPU particle system: data interfaces, modules, emitters, event-driven spawning",
+                    },
+                ],
+                Python: [
+                    {
+                        value: "tkinter",
+                        label: "Tkinter",
+                        prompt: "Use Tkinter for cross-platform GUI.",
+                        tip: "Python's built-in GUI toolkit: simple widget set, no extra dependencies, cross-platform",
+                    },
+                    {
+                        value: "fastapi",
+                        label: "FastAPI",
+                        prompt: "Use FastAPI for the web framework with automatic OpenAPI docs.",
+                        tip: "Modern async web framework: type hints → validation → docs, Pydantic models, Starlette core",
+                    },
+                    {
+                        value: "django",
+                        label: "Django",
+                        prompt: "Use Django web framework with ORM, admin, and batteries-included approach.",
+                        tip: "Full-featured web framework: ORM, admin panel, auth, migrations, template engine",
+                    },
+                    {
+                        value: "flask",
+                        label: "Flask",
+                        prompt: "Use Flask as a lightweight web framework.",
+                        tip: "Minimal web framework: route decorators, Jinja2 templates, extension-based architecture",
+                    },
+                    {
+                        value: "pytest",
+                        label: "pytest",
+                        prompt: "Use pytest as the test framework with fixtures and parametrize.",
+                        tip: "Python test framework: fixtures, parametrize, assertions, plugins, auto-discovery",
+                    },
+                    {
+                        value: "docker-py",
+                        label: "Docker deploy",
+                        prompt: "Include Dockerfile for containerized deployment.",
+                        tip: "Multi-stage Docker build: slim base image, pip install, non-root user, health checks",
+                    },
+                    {
+                        value: "pyqt",
+                        label: "PyQt/PySide",
+                        prompt: "Use PyQt6 or PySide6 for desktop GUI.",
+                        tip: "Qt bindings for Python: rich widget set, designer tool, signals/slots, cross-platform native look",
+                    },
+                ],
+                "Node.js": [
+                    {
+                        value: "express-tool",
+                        label: "Express",
+                        prompt: "Use Express.js as the web framework.",
+                        tip: "Minimal Node.js web framework: middleware pattern, large ecosystem, well-documented",
+                    },
+                    {
+                        value: "fastify-tool",
+                        label: "Fastify",
+                        prompt: "Use Fastify as the web framework with schema-based validation.",
+                        tip: "High-performance Node.js framework: JSON schema validation, plugin architecture, 2x faster than Express",
+                    },
+                    {
+                        value: "nestjs",
+                        label: "NestJS",
+                        prompt: "Use NestJS framework with decorators, modules, and dependency injection.",
+                        tip: "Enterprise Node.js framework: Angular-inspired, TypeScript-first, modular architecture, DI container",
+                    },
+                    {
+                        value: "prisma",
+                        label: "Prisma ORM",
+                        prompt: "Use Prisma for database access with type-safe queries.",
+                        tip: "Type-safe ORM: schema-first, auto-generated client, migrations, multi-database support",
+                    },
+                    {
+                        value: "docker-node",
+                        label: "Docker deploy",
+                        prompt: "Include Dockerfile for containerized Node.js deployment.",
+                        tip: "Multi-stage build: node:slim base, npm ci --production, non-root user, health checks",
+                    },
+                    {
+                        value: "vitest",
+                        label: "Vitest",
+                        prompt: "Use Vitest as the test framework.",
+                        tip: "Vite-native test runner: Jest-compatible API, ESM-first, built-in coverage, fast watch mode",
+                    },
+                ],
+                Rust: [
+                    {
+                        value: "tokio",
+                        label: "Tokio",
+                        prompt: "Use Tokio as the async runtime.",
+                        tip: "Most popular Rust async runtime: multi-threaded, task spawning, timers, I/O, channels",
+                    },
+                    {
+                        value: "axum",
+                        label: "Axum",
+                        prompt: "Use Axum web framework with extractors and tower middleware.",
+                        tip: "Tokio-based web framework: type-safe extractors, tower middleware compatibility, zero boilerplate",
+                    },
+                    {
+                        value: "wasm-target",
+                        label: "WASM target",
+                        prompt: "Target WebAssembly with wasm-bindgen for browser deployment.",
+                        tip: "Compile to WASM: wasm-bindgen for JS interop, wasm-pack for npm publishing",
+                    },
+                    {
+                        value: "clap-tool",
+                        label: "clap CLI",
+                        prompt: "Use clap for command-line argument parsing with derive macros.",
+                        tip: "Rust CLI framework: derive macro for struct-based args, subcommands, shell completions",
+                    },
+                    {
+                        value: "sqlx",
+                        label: "SQLx",
+                        prompt: "Use SQLx for compile-time checked SQL queries.",
+                        tip: "Async SQL toolkit: compile-time query verification, multiple DB backends, no ORM overhead",
+                    },
+                ],
+                Go: [
+                    {
+                        value: "wails",
+                        label: "Wails",
+                        prompt: "Use Wails for cross-platform desktop application with Go backend and web frontend.",
+                        tip: "Go desktop framework: native rendering, Go backend + web frontend, auto-bindings, no Electron",
+                    },
+                    {
+                        value: "gin",
+                        label: "Gin",
+                        prompt: "Use Gin as the HTTP web framework.",
+                        tip: "Fast Go web framework: httprouter-based, middleware, JSON validation, error handling",
+                    },
+                    {
+                        value: "fiber",
+                        label: "Fiber",
+                        prompt: "Use Fiber as the Express-inspired web framework.",
+                        tip: "Fast Go web framework: Express-like API, fasthttp under the hood, middleware ecosystem",
+                    },
+                    {
+                        value: "cobra",
+                        label: "Cobra CLI",
+                        prompt: "Use Cobra for CLI application with subcommands.",
+                        tip: "Go CLI framework: subcommands, flags, shell completions, man page generation",
+                    },
+                    {
+                        value: "docker-go",
+                        label: "Docker deploy",
+                        prompt: "Include multi-stage Dockerfile for minimal Go binary deployment.",
+                        tip: "Multi-stage build: golang builder → scratch/distroless final, static binary, ~10MB image",
+                    },
+                    {
+                        value: "grpc-go",
+                        label: "gRPC",
+                        prompt: "Use gRPC with protobuf for service communication.",
+                        tip: "High-performance RPC: protobuf schemas, code generation, streaming, bidirectional",
+                    },
+                ],
+                "Swift/iOS": [
+                    {
+                        value: "spm",
+                        label: "Swift Package Manager",
+                        prompt: "Use Swift Package Manager for dependency management.",
+                        tip: "Apple's native package manager: Package.swift manifest, version resolution, local + remote deps",
+                    },
+                    {
+                        value: "ios-target",
+                        label: "iOS target",
+                        prompt: "Target iOS 16+ with UIKit or SwiftUI.",
+                        tip: "iPhone/iPad: App Store distribution, push notifications, background processing, Core ML",
+                    },
+                    {
+                        value: "macos-target",
+                        label: "macOS target",
+                        prompt: "Target macOS 13+ with AppKit or SwiftUI.",
+                        tip: "Mac desktop: menu bar, dock integration, sandboxing, notarization, multi-window",
+                    },
+                    {
+                        value: "vapor",
+                        label: "Vapor",
+                        prompt: "Use Vapor for server-side Swift web framework.",
+                        tip: "Swift web framework: async/await, Fluent ORM, Leaf templating, WebSocket support",
+                    },
+                    {
+                        value: "alamofire",
+                        label: "Alamofire",
+                        prompt: "Use Alamofire for HTTP networking.",
+                        tip: "Swift HTTP client: request/response chaining, authentication, retry, certificate pinning",
+                    },
+                ],
+                "Java/Kotlin/Android": [
+                    {
+                        value: "gradle-tool",
+                        label: "Gradle",
+                        prompt: "Use Gradle as the build system with Kotlin DSL.",
+                        tip: "Build automation: Kotlin DSL, dependency management, task graph, build caching",
+                    },
+                    {
+                        value: "hilt",
+                        label: "Hilt DI",
+                        prompt: "Use Hilt for dependency injection.",
+                        tip: "Android DI built on Dagger: @Inject, @HiltViewModel, scoped bindings, less boilerplate",
+                    },
+                    {
+                        value: "retrofit",
+                        label: "Retrofit",
+                        prompt: "Use Retrofit for HTTP API client with coroutine support.",
+                        tip: "Type-safe HTTP client: annotation-driven, Moshi/Gson converters, coroutine adapters",
+                    },
+                    {
+                        value: "room-tool",
+                        label: "Room DB",
+                        prompt: "Use Room for local database with type-safe queries.",
+                        tip: "Android SQLite ORM: compile-time SQL verification, Flow/LiveData support, migrations",
+                    },
+                    {
+                        value: "compose",
+                        label: "Jetpack Compose",
+                        prompt: "Use Jetpack Compose for declarative UI.",
+                        tip: "Modern Android UI: composable functions, state-driven, Material 3, preview tooling",
+                    },
+                    {
+                        value: "spring-boot-tool",
+                        label: "Spring Boot",
+                        prompt: "Use Spring Boot for the application framework.",
+                        tip: "Java/Kotlin server framework: auto-configuration, starters, actuator, embedded server",
+                    },
+                ],
+                "C/C++": [
+                    {
+                        value: "cmake",
+                        label: "CMake",
+                        prompt: "Use CMake as the build system.",
+                        tip: "Cross-platform build generator: targets, presets, find_package, vcpkg/conan integration",
+                    },
+                    {
+                        value: "vcpkg",
+                        label: "vcpkg",
+                        prompt: "Use vcpkg for C/C++ dependency management.",
+                        tip: "Microsoft's package manager: 2000+ libraries, CMake integration, manifest mode",
+                    },
+                    {
+                        value: "conan",
+                        label: "Conan",
+                        prompt: "Use Conan for C/C++ package management.",
+                        tip: "Decentralized package manager: recipes, profiles, multi-config, remote repositories",
+                    },
+                    {
+                        value: "sdl2",
+                        label: "SDL2",
+                        prompt: "Use SDL2 for cross-platform windowing, input, and audio.",
+                        tip: "Cross-platform media library: window management, OpenGL/Vulkan context, input, audio, gamepad",
+                    },
+                    {
+                        value: "imgui",
+                        label: "Dear ImGui",
+                        prompt: "Use Dear ImGui for immediate-mode GUI.",
+                        tip: "Immediate-mode GUI: no state management, render-backend agnostic, ideal for tools and debug UI",
+                    },
+                    {
+                        value: "linux-target",
+                        label: "Linux target",
+                        prompt: "Target Linux with POSIX APIs.",
+                        tip: "Linux platform: POSIX syscalls, epoll, systemd integration, package manager distribution",
+                    },
+                    {
+                        value: "embedded-target",
+                        label: "Embedded target",
+                        prompt: "Target embedded platform — no OS, bare-metal, constrained memory.",
+                        tip: "Bare-metal: no heap, no OS, interrupt-driven, fixed memory map, cross-compiler toolchain",
+                    },
+                ],
+                "GLSL/Shaders": [
+                    {
+                        value: "opengl",
+                        label: "OpenGL target",
+                        prompt: "Target OpenGL 4.5+ / OpenGL ES 3.0+.",
+                        tip: "Cross-platform graphics API: wide device support, compute shaders, SPIR-V compatible",
+                    },
+                    {
+                        value: "vulkan-target",
+                        label: "Vulkan target",
+                        prompt: "Target Vulkan with SPIR-V compiled shaders.",
+                        tip: "Low-level graphics API: explicit memory, command buffers, descriptor sets, multi-threaded",
+                    },
+                    {
+                        value: "webgl",
+                        label: "WebGL target",
+                        prompt: "Target WebGL 2.0 for browser-based rendering.",
+                        tip: "Browser graphics: OpenGL ES 3.0 subset, no compute shaders, texture size limits",
+                    },
+                ],
+                _default: [],
+            };
+
+            const defaultTraits = [
+                "Responsive layout",
+                "International text support",
+                "Accessible",
+                "Cross-platform",
+                "Keyboard navigable",
+                "Well-documented",
+            ];
+
+            const state = {
+                action: "",
+                type: "",
+                scope: "",
+                input: "",
+                activePresets: [],
+                conventions: [],
+                qualities: [],
+                traits: [],
+                tooling: [],
+                planModifiers: [],
+            };
+
+            // ── Presets (multi-select) ──
+            function initPresets() {
+                const bar = document.getElementById("preset-bar");
+                for (const name of Object.keys(presets)) {
+                    const btn = document.createElement("button");
+                    btn.className = "preset-btn";
+                    btn.textContent = name;
+                    btn.setAttribute("data-tip", presetTips[name] || "");
+                    btn.onclick = () => togglePreset(name, btn);
+                    bar.appendChild(btn);
+                }
+            }
+
+            function togglePreset(name, btn) {
+                const idx = state.activePresets.indexOf(name);
+                if (idx >= 0) {
+                    state.activePresets.splice(idx, 1);
+                    btn.classList.remove("active");
+                } else {
+                    state.activePresets.push(name);
+                    btn.classList.add("active");
+                }
+                refreshConventions();
+                refreshStructure();
+                refreshTooling();
+                refreshTraits();
+                buildPrompt();
+            }
+
+            // ── Conventions ──
+            function refreshConventions() {
+                const container = document.getElementById("convention-checks");
+                container.innerHTML = "";
+                state.conventions = [];
+                if (!state.activePresets.length) return;
+
+                for (const presetName of state.activePresets) {
+                    const p = presets[presetName];
+                    if (state.activePresets.length > 1) {
+                        const divider = document.createElement("div");
+                        divider.className = "section-divider";
+                        divider.textContent = presetName;
+                        divider.style.width = "100%";
+                        container.appendChild(divider);
+                    }
+                    for (const c of p.conventions) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute(
+                            "data-tip",
+                            conventionTips[c.value] || c.prompt,
+                        );
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = presetName + "::" + c.value;
+                        cb.dataset.prompt = c.prompt;
+                        cb.onchange = () => {
+                            updateConventions();
+                            buildPrompt();
+                        };
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(c.label));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateConventions() {
+                const checked = document.querySelectorAll(
+                    "#convention-checks input:checked",
+                );
+                state.conventions = [...checked].map((cb) => ({
+                    key: cb.value,
+                    prompt: cb.dataset.prompt,
+                }));
+            }
+
+            // ── Quality ──
+            function populateQuality() {
+                const container = document.getElementById("quality-checks");
+                container.innerHTML = "";
+                state.qualities = [];
+                for (const q of qualityOptions) {
+                    const lbl = document.createElement("label");
+                    lbl.setAttribute(
+                        "data-tip",
+                        qualityTips[q.value] || q.prompt,
+                    );
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.value = q.value;
+                    cb.dataset.prompt = q.prompt;
+                    cb.onchange = () => {
+                        updateQualities();
+                        refreshInputOptions();
+                        buildPrompt();
+                    };
+                    lbl.appendChild(cb);
+                    lbl.appendChild(document.createTextNode(q.label));
+                    container.appendChild(lbl);
+                }
+            }
+
+            function updateQualities() {
+                const checked = document.querySelectorAll(
+                    "#quality-checks input:checked",
+                );
+                state.qualities = [...checked].map((cb) => ({
+                    value: cb.value,
+                    prompt: cb.dataset.prompt,
+                }));
+            }
+
+            // ── Plan modifiers ──
+            function populatePlanModifiers() {
+                const container = document.getElementById(
+                    "plan-modifier-checks",
+                );
+                container.innerHTML = "";
+                state.planModifiers = [];
+                for (const m of planModifiers) {
+                    const lbl = document.createElement("label");
+                    lbl.setAttribute(
+                        "data-tip",
+                        planModifierTips[m.value] || m.prompt,
+                    );
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.value = m.value;
+                    cb.dataset.prompt = m.prompt;
+                    cb.onchange = () => {
+                        updatePlanModifiers();
+                        buildPrompt();
+                    };
+                    lbl.appendChild(cb);
+                    lbl.appendChild(document.createTextNode(m.label));
+                    container.appendChild(lbl);
+                }
+            }
+
+            function updatePlanModifiers() {
+                const checked = document.querySelectorAll(
+                    "#plan-modifier-checks input:checked",
+                );
+                state.planModifiers = [...checked].map((cb) => ({
+                    value: cb.value,
+                    prompt: cb.dataset.prompt,
+                }));
+            }
+
+            // ── Project structure ──
+            function refreshStructure() {
+                const sel = document.getElementById("sel-structure");
+                sel.innerHTML =
+                    '<option value="">No structure preference...</option>';
+                // Gather options from active presets, or type-based, or default
+                const seen = new Set();
+                const allOpts = [];
+                for (const name of state.activePresets) {
+                    if (structureOptions[name]) {
+                        for (const o of structureOptions[name]) {
+                            if (!seen.has(o.value)) {
+                                seen.add(o.value);
+                                allOpts.push(o);
+                            }
+                        }
+                    }
+                }
+                if (!allOpts.length) {
+                    const fallback =
+                        structureOptions[state.type] ||
+                        structureOptions._default;
+                    for (const o of fallback) allOpts.push(o);
+                }
+                for (const o of allOpts) {
+                    const el = document.createElement("option");
+                    el.value = o.value;
+                    el.textContent = o.label;
+                    sel.appendChild(el);
+                }
+            }
+
+            // ── Tooling & platform ──
+            function refreshTooling() {
+                const container = document.getElementById("tooling-checks");
+                container.innerHTML = "";
+                state.tooling = [];
+                const seen = new Set();
+                const allTools = [];
+                for (const name of state.activePresets) {
+                    if (toolingOptions[name]) {
+                        if (state.activePresets.length > 1) {
+                            const divider = document.createElement("div");
+                            divider.className = "section-divider";
+                            divider.textContent = name;
+                            divider.style.width = "100%";
+                            container.appendChild(divider);
+                        }
+                        for (const t of toolingOptions[name]) {
+                            if (seen.has(t.value)) continue;
+                            seen.add(t.value);
+                            const lbl = document.createElement("label");
+                            lbl.setAttribute("data-tip", t.tip || t.prompt);
+                            const cb = document.createElement("input");
+                            cb.type = "checkbox";
+                            cb.value = t.value;
+                            cb.dataset.prompt = t.prompt;
+                            cb.onchange = () => {
+                                updateTooling();
+                                buildPrompt();
+                            };
+                            lbl.appendChild(cb);
+                            lbl.appendChild(document.createTextNode(t.label));
+                            container.appendChild(lbl);
+                        }
+                    }
+                }
+                // If no presets, use type-based or default
+                if (!state.activePresets.length) {
+                    const fallback =
+                        toolingOptions[state.type] ||
+                        toolingOptions._default ||
+                        [];
+                    for (const t of fallback) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute("data-tip", t.tip || t.prompt);
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = t.value;
+                        cb.dataset.prompt = t.prompt;
+                        cb.onchange = () => {
+                            updateTooling();
+                            buildPrompt();
+                        };
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(t.label));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateTooling() {
+                const checked = document.querySelectorAll(
+                    "#tooling-checks input:checked",
+                );
+                state.tooling = [...checked].map((cb) => ({
+                    value: cb.value,
+                    prompt: cb.dataset.prompt,
+                }));
+            }
+
+            // ── Second pass (ordered toggle buttons) ──
+            const secondPassItems = [
+                {
+                    value: "code-review",
+                    label: "Code review",
+                    tip: "Re-read the code checking for bugs, security issues, edge cases, and style violations",
+                },
+                {
+                    value: "test",
+                    label: "Test",
+                    tip: "Write unit tests covering main logic paths, edge cases, and error conditions",
+                },
+                {
+                    value: "optimize",
+                    label: "Optimize",
+                    tip: "Identify performance bottlenecks and optimize critical paths",
+                },
+                {
+                    value: "security-audit",
+                    label: "Security audit",
+                    tip: "Check for XSS, injection, data exposure, and OWASP top 10 vulnerabilities",
+                },
+                {
+                    value: "accessibility-audit",
+                    label: "Accessibility audit",
+                    tip: "Check WCAG compliance: contrast, focus order, screen reader labels, keyboard access",
+                },
+                {
+                    value: "document",
+                    label: "Document",
+                    tip: "Add documentation to public APIs and comments for complex logic",
+                },
+                {
+                    value: "refactor",
+                    label: "Refactor",
+                    tip: "Extract repeated patterns, simplify complex functions, improve naming",
+                },
+                {
+                    value: "harden",
+                    label: "Harden errors",
+                    tip: "Add missing error handling, recovery paths, and user-facing error messages",
+                },
+            ];
+
+            let secondPassOrder = []; // ordered list of selected values
+
+            function populateSecondPass() {
+                const container = document.getElementById("secondpass-checks");
+                container.innerHTML = "";
+                secondPassOrder = [];
+                for (const item of secondPassItems) {
+                    const lbl = document.createElement("label");
+                    lbl.setAttribute("data-tip", item.tip);
+                    lbl.dataset.value = item.value;
+                    const badge = document.createElement("span");
+                    badge.className = "order-badge";
+                    lbl.appendChild(badge);
+                    lbl.appendChild(document.createTextNode(item.label));
+                    lbl.onclick = () => toggleSecondPass(item.value);
+                    container.appendChild(lbl);
+                }
+            }
+
+            function toggleSecondPass(value) {
+                const idx = secondPassOrder.indexOf(value);
+                if (idx >= 0) {
+                    secondPassOrder.splice(idx, 1);
+                } else {
+                    secondPassOrder.push(value);
+                }
+                const container = document.getElementById("secondpass-checks");
+                for (const lbl of container.children) {
+                    const v = lbl.dataset.value;
+                    const pos = secondPassOrder.indexOf(v);
+                    const badge = lbl.querySelector(".order-badge");
+                    if (pos >= 0) {
+                        lbl.classList.add("ordered");
+                        badge.textContent = pos + 1;
+                    } else {
+                        lbl.classList.remove("ordered");
+                        badge.textContent = "";
+                    }
+                }
+                buildPrompt();
+            }
+
+            // ── Input options ──
+            function refreshInputOptions() {
+                const sel = document.getElementById("sel-input");
+                const opts = getInputOpts();
+                sel.innerHTML =
+                    '<option value="">Choose input context...</option>';
+                for (const o of opts) {
+                    const el = document.createElement("option");
+                    el.value = o.value;
+                    el.textContent =
+                        o.value === "none" ? "No user input" : o.prompt;
+                    sel.appendChild(el);
+                }
+                state.input = "";
+            }
+
+            function getInputOpts() {
+                for (const q of state.qualities) {
+                    if (inputOptions[q.value]) return inputOptions[q.value];
+                }
+                return inputOptions._default;
+            }
+
+            // ── Traits ──
+            function refreshTraits() {
+                if (
+                    document
+                        .getElementById("step-traits")
+                        .classList.contains("disabled")
+                )
+                    return;
+                const traitSet = new Set();
+                for (const name of state.activePresets) {
+                    for (const t of presets[name].traits) traitSet.add(t);
+                }
+                if (!state.activePresets.length) {
+                    const typeTraits = {
+                        "a web application": [
+                            "Responsive layout",
+                            "International text support",
+                            "Accessible (ARIA)",
+                            "Dark mode support",
+                            "Keyboard navigable",
+                            "Print-friendly",
+                            "Mobile-first",
+                            "Offline-capable",
+                        ],
+                        "a CLI tool": [
+                            "Colored output",
+                            "Progress indicators",
+                            "Quiet/verbose modes",
+                            "Pipe-friendly",
+                            "Cross-platform",
+                            "Config file support",
+                        ],
+                        "an API endpoint": [
+                            "Rate limiting",
+                            "Pagination",
+                            "CORS headers",
+                            "Request logging",
+                            "Versioned routes",
+                            "OpenAPI documented",
+                        ],
+                        "a game": [
+                            "Gamepad support",
+                            "Fullscreen toggle",
+                            "Save/load state",
+                            "Sound effects",
+                            "Touch controls",
+                            "Frame-rate independent",
+                        ],
+                    };
+                    for (const t of typeTraits[state.type] || defaultTraits)
+                        traitSet.add(t);
+                }
+                populateTraitChecks([...traitSet]);
+            }
+
+            function populateTraitChecks(traitList) {
+                const container = document.getElementById("trait-checks");
+                container.innerHTML = "";
+                state.traits = [];
+                for (const t of traitList) {
+                    const lbl = document.createElement("label");
+                    lbl.setAttribute("data-tip", traitTips[t] || "");
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.value = t;
+                    cb.onchange = () => {
+                        updateTraits();
+                        buildPrompt();
+                    };
+                    lbl.appendChild(cb);
+                    lbl.appendChild(document.createTextNode(t));
+                    container.appendChild(lbl);
+                }
+            }
+
+            function updateTraits() {
+                state.traits = [
+                    ...document.querySelectorAll("#trait-checks input:checked"),
+                ].map((c) => c.value);
+            }
+
+            // ── Dropdown helpers ──
+            function populateSelect(id, items, isSimple) {
+                const sel = document.getElementById(id);
+                const placeholder = sel.options[0].textContent;
+                sel.innerHTML = `<option value="">${esc(placeholder)}</option>`;
+                for (const item of items) {
+                    const o = document.createElement("option");
+                    if (isSimple) {
+                        o.value = item;
+                        o.textContent = item;
+                    } else {
+                        o.value = item.value;
+                        o.textContent = item.desc
+                            ? `${item.value} — ${item.desc}`
+                            : item.label || item.value;
+                    }
+                    sel.appendChild(o);
+                }
+            }
+
+            function getScopeOpts() {
+                return scopeOptions[state.type] || scopeOptions._default;
+            }
+
+            // ── Flow control ──
+            function enableStep(step) {
+                document
+                    .getElementById("step-" + step)
+                    .classList.remove("disabled");
+            }
+            function disableStep(step) {
+                document
+                    .getElementById("step-" + step)
+                    .classList.add("disabled");
+            }
+
+            function onSelect(step) {
+                const val = document.getElementById("sel-" + step).value;
+                state[step] = val;
+
+                if (step === "action") {
+                    disableStepsFrom("plan-modifiers");
+                    if (!val) {
+                        buildPrompt();
+                        return;
+                    }
+
+                    // Show plan modifiers only for Plan action
+                    if (val === "Plan") {
+                        populatePlanModifiers();
+                        enableStep("plan-modifiers");
+                    }
+
+                    populateSelect("sel-type", typeOptions[val] || [], true);
+                    enableStep("type");
+                } else if (step === "type") {
+                    disableStepsFrom("describe");
+                    if (!val) {
+                        buildPrompt();
+                        return;
+                    }
+                    enableAllFrom("describe");
+                } else if (step === "scope") {
+                    // Scope change shouldn't reset downstream — just rebuild prompt
+                }
+
+                buildPrompt();
+            }
+
+            function enableAllFrom(startStep) {
+                // Enable everything from startStep onward and populate them
+                enableStep("describe");
+                populateSelect("sel-scope", getScopeOpts(), false);
+                enableStep("scope");
+                refreshStructure();
+                enableStep("structure");
+                enableStep("conventions");
+                refreshConventions();
+                refreshTooling();
+                enableStep("tooling");
+                populateQuality();
+                enableStep("quality");
+                refreshInputOptions();
+                enableStep("input");
+                enableStep("errorhandling");
+                enableStep("traits");
+                refreshTraits();
+                enableStep("extra");
+                populateSecondPass();
+                enableStep("secondpass");
+            }
+
+            function disableStepsFrom(startStep) {
+                const idx = flow.indexOf(startStep);
+                for (let i = idx; i < flow.length; i++) {
+                    const s = flow[i];
+                    if (s === "traits") state.traits = [];
+                    else if (s === "conventions") state.conventions = [];
+                    else if (s === "quality") state.qualities = [];
+                    else if (s === "tooling") state.tooling = [];
+                    else if (s === "plan-modifiers") state.planModifiers = [];
+                    else if (s === "secondpass") secondPassOrder = [];
+                    else if (s !== "describe" && s !== "extra") state[s] = "";
+                    disableStep(s);
+                }
+            }
+
+            // ── Prompt assembly ──
+            function buildPrompt() {
+                const parts = [];
+
+                if (!state.action) {
+                    document.getElementById("prompt-box").value = "";
+                    document.getElementById("secondpass-output").style.display =
+                        "none";
+                    return;
+                }
+
+                const isPlan = state.action === "Plan";
+                const isOptimize = state.action === "Optimize";
+
+                // Opening
+                let opening = isOptimize ? "Optimize for" : state.action;
+                if (state.type) opening += " " + state.type;
+
+                const desc = document
+                    .getElementById("txt-describe")
+                    .value.trim();
+                if (desc) {
+                    if (desc.match(/^that |^which |^for |^— /i)) {
+                        opening += " " + desc;
+                    } else {
+                        opening += " — " + desc;
+                    }
+                }
+                opening += ".";
+                parts.push(opening);
+
+                // Plan modifiers
+                if (isPlan && state.planModifiers.length) {
+                    for (const m of state.planModifiers) parts.push(m.prompt);
+                }
+
+                // Scope
+                if (state.scope) {
+                    const match = getScopeOpts().find(
+                        (o) => o.value === state.scope,
+                    );
+                    if (match) parts.push(match.prompt);
+                }
+
+                // Project structure
+                const structVal =
+                    document.getElementById("sel-structure").value;
+                if (structVal) {
+                    // Find the prompt from all structure options
+                    for (const key of Object.keys(structureOptions)) {
+                        const match = (structureOptions[key] || []).find(
+                            (o) => o.value === structVal,
+                        );
+                        if (match) {
+                            parts.push(match.prompt);
+                            break;
+                        }
+                    }
+                }
+                const customStruct = document
+                    .getElementById("txt-structure")
+                    .value.trim();
+                if (customStruct) {
+                    parts.push(
+                        "Use this directory layout: " + customStruct + ".",
+                    );
+                }
+
+                // Conventions
+                if (state.conventions.length) {
+                    for (const c of state.conventions) parts.push(c.prompt);
+                }
+
+                // Tooling & platform
+                if (state.tooling.length) {
+                    for (const t of state.tooling) parts.push(t.prompt);
+                }
+
+                // Quality
+                if (state.qualities.length === 1) {
+                    parts.push(state.qualities[0].prompt);
+                } else if (state.qualities.length > 1) {
+                    // Use "Prioritize X, Y, and Z" — no redundant follow-up
+                    const labels = state.qualities.map((q) => q.value);
+                    parts.push(
+                        "Prioritize " +
+                            labels.slice(0, -1).join(", ") +
+                            " and " +
+                            labels[labels.length - 1] +
+                            ".",
+                    );
+                }
+
+                // Input
+                if (state.input && state.input !== "none") {
+                    const opts = getInputOpts();
+                    const match = opts.find((o) => o.value === state.input);
+                    if (match && match.prompt) parts.push(match.prompt);
+                }
+
+                // Error handling
+                const errVal =
+                    document.getElementById("sel-errorhandling").value;
+                if (errVal && errorHandlingPrompts[errVal]) {
+                    parts.push(errorHandlingPrompts[errVal]);
+                }
+
+                // Traits
+                if (state.traits.length) {
+                    parts.push(state.traits.join(", ") + ".");
+                }
+
+                // Extra
+                const extra = document.getElementById("txt-extra").value.trim();
+                if (extra) parts.push(extra);
+
+                // Closing
+                if (isPlan) {
+                    parts.push(
+                        "Produce a plan that is clear, unambiguous, and directly executable by an LLM coding agent.",
+                    );
+                } else if (isOptimize) {
+                    parts.push(
+                        "Profile before and after. Preserve correctness and readability — only sacrifice clarity for measurable gains in hot paths.",
+                    );
+                } else {
+                    parts.push(
+                        "Keep the feature set minimal but the implementation solid.",
+                    );
+                }
+
+                document.getElementById("prompt-box").value = parts.join(" ");
+
+                // Second pass
+                const sp = [];
+                if (secondPassOrder.length) {
+                    sp.push(
+                        "After completing the above, perform these steps in order:",
+                    );
+                    secondPassOrder.forEach((val, i) => {
+                        if (secondPassPrompts[val]) {
+                            sp.push(`${i + 1}. ${secondPassPrompts[val]}`);
+                        }
+                    });
+                }
+                const spExtra = document
+                    .getElementById("txt-secondpass")
+                    .value.trim();
+                if (spExtra) {
+                    if (!sp.length) sp.push("After completing the above:");
+                    sp.push(spExtra);
+                }
+
+                const box2 = document.getElementById("prompt-box-2");
+                const spSection = document.getElementById("secondpass-output");
+                if (sp.length) {
+                    box2.value = sp.join("\n");
+                    spSection.style.display = "block";
+                } else {
+                    box2.value = "";
+                    spSection.style.display = "none";
+                }
+            }
+
+            // ── Copy ──
+            function copyPrompt() {
+                const main = document.getElementById("prompt-box").value;
+                const second = document.getElementById("prompt-box-2").value;
+                const full = second ? main + "\n\n" + second : main;
+                navigator.clipboard.writeText(full).then(() => showToast());
+            }
+
+            function copyMain() {
+                navigator.clipboard
+                    .writeText(document.getElementById("prompt-box").value)
+                    .then(() => showToast());
+            }
+
+            function showToast() {
+                const msg = document.getElementById("toast");
+                msg.classList.add("show");
+                setTimeout(() => msg.classList.remove("show"), 1500);
+            }
+
+            function resetAll() {
+                state.action = "";
+                state.type = "";
+                state.scope = "";
+                state.input = "";
+                state.activePresets = [];
+                state.conventions = [];
+                state.qualities = [];
+                state.traits = [];
+                state.planModifiers = [];
+                state.tooling = [];
+
+                for (const s of flow) {
+                    disableStep(s);
+                    const sel = document.getElementById("sel-" + s);
+                    if (sel) sel.value = "";
+                }
+                enableStep("action");
+                document.getElementById("sel-action").value = "";
+                document.getElementById("txt-describe").value = "";
+                document.getElementById("txt-extra").value = "";
+                document.getElementById("txt-secondpass").value = "";
+                document.getElementById("sel-errorhandling").value = "";
+                document.getElementById("sel-structure").value = "";
+                document.getElementById("txt-structure").value = "";
+                secondPassOrder = [];
+                document.getElementById("trait-checks").innerHTML = "";
+                document.getElementById("convention-checks").innerHTML = "";
+                document.getElementById("quality-checks").innerHTML = "";
+                document.getElementById("tooling-checks").innerHTML = "";
+                document.getElementById("plan-modifier-checks").innerHTML = "";
+                document.getElementById("secondpass-checks").innerHTML = "";
+                document.getElementById("prompt-box").value = "";
+                document.getElementById("prompt-box-2").value = "";
+                document.getElementById("secondpass-output").style.display =
+                    "none";
+                document
+                    .querySelectorAll(".preset-btn")
+                    .forEach((b) => b.classList.remove("active"));
+            }
+
+            function esc(s) {
+                const el = document.createElement("span");
+                el.textContent = s;
+                return el.innerHTML;
+            }
+
+            // ── Init ──
+            const actionOpts = [
+                { value: "Build", desc: "Engineer from scratch with care" },
+                { value: "Implement", desc: "Add to existing codebase" },
+                { value: "Create", desc: "Produce a new standalone utility" },
+                {
+                    value: "Optimize",
+                    desc: "Improve performance of existing code",
+                },
+                {
+                    value: "Plan",
+                    desc: "Generate an LLM-executable implementation plan",
+                },
+                { value: "Design", desc: "Architect structure and interfaces" },
+                { value: "Refactor", desc: "Restructure existing code" },
+            ];
+            populateSelect("sel-action", actionOpts, false);
+            initPresets();
+        </script>
+    </body>
+</html>
