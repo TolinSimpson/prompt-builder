@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>3D Mesh Prompt Builder</title>
+        <style>
+            * { margin: 0; box-sizing: border-box; }
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 760px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+                background: #fafafa;
+            }
+            h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+            .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+            .step { margin-bottom: 1rem; }
+            .step-label {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+            }
+            .step-hint { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; }
+            select, .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font: inherit;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+            }
+            select { cursor: pointer; }
+            select:focus, .text-input:focus {
+                outline: 2px solid #4a90d9;
+                border-color: #4a90d9;
+            }
+            .text-input { resize: none; height: 2.4rem; }
+            .text-input.tall { height: 3.6rem; }
+            .checks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
+            .checks label {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.82rem;
+                cursor: pointer;
+                padding: 0.25rem 0.55rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                user-select: none;
+                position: relative;
+            }
+            .checks label:has(input:checked) {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .checks input { display: none; }
+            .section-divider {
+                font-size: 0.7rem;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin: 0.5rem 0 0.15rem;
+                width: 100%;
+            }
+            .output-section {
+                margin-top: 1.5rem;
+                border-top: 1px solid #ddd;
+                padding-top: 1rem;
+            }
+            .output-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            .prompt-area {
+                width: 100%;
+                min-height: 120px;
+                padding: 0.75rem;
+                font: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                resize: vertical;
+                color: #222;
+            }
+            .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+            button {
+                padding: 0.4rem 1rem;
+                font: inherit;
+                cursor: pointer;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #f5f5f5;
+            }
+            button:hover { background: #e0e0e0; }
+            .toast {
+                font-size: 0.8rem;
+                color: #2e7d32;
+                align-self: center;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .toast.show { opacity: 1; }
+            [data-tip] { position: relative; }
+            [data-tip]::after {
+                content: attr(data-tip);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.72rem;
+                line-height: 1.35;
+                padding: 0.35rem 0.55rem;
+                border-radius: 4px;
+                white-space: normal;
+                width: max-content;
+                max-width: 260px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 10;
+            }
+            [data-tip]:hover::after { opacity: 1; }
+        </style>
+    </head>
+    <body>
+        <h1>3D Mesh Prompt Builder</h1>
+        <p class="subtitle">
+            Build platform-tuned prompt for 3D mesh generation. Hover labels for
+            topology / PBR / engine-export definitions.
+        </p>
+
+        <div class="step">
+            <span class="step-label" data-tip="Target 3D-gen platform. Sets native flow — Meshy refine + auto-rig, Tripo quad retopo, Rodin multi-view, TRELLIS outputs, etc.">Target Platform</span>
+            <select id="sel-toolchain" onchange="buildPrompt()">
+                <option value="">Choose platform...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Output convention. Sets quality/optimization baseline — PBR-ready maps, game-ready quad mesh, low-poly stylized, high-poly sculpt, etc.">Output Convention</span>
+            <select id="sel-style" onchange="buildPrompt()">
+                <option value="">No specific convention...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="The mesh you want — subject, form, style, intended use. Reference style if known (PS1, Blizzard, scan, etc.).">Subject</span>
+            <span class="step-hint">Describe the mesh — subject, form, style, intended use</span>
+            <textarea
+                class="text-input tall"
+                id="txt-subject"
+                placeholder="e.g. medieval knight helmet with gold filigree etched into burnished steel, broken visor"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Asset arrangement — single hero asset, related set, modular kit, character views, or texture format.">Scope</span>
+            <select id="sel-scope" onchange="buildPrompt()">
+                <option value="">No preference...</option>
+                <option value="single">Single hero asset — high fidelity, one mesh</option>
+                <option value="set">Asset set — multiple related meshes sharing style and scale</option>
+                <option value="modular-kit">Modular kit — interlocking tiles with grid snap</option>
+                <option value="char-full-body">Full-body character — head to toe, rigging-ready</option>
+                <option value="char-bust">Bust / portrait — head and shoulders</option>
+                <option value="char-turntable">Turntable views — front, 3-quarter, side, back</option>
+                <option value="tileable-texture">Tileable material — seamless on all 4 edges, full PBR set</option>
+                <option value="trim-sheet">Trim sheet — multiple texture strips for UV mapping</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Topology + UVs + PBR maps + detail + use case + rigging. Pick all that apply.">Technical Spec</span>
+            <span class="step-hint">Topology, UVs, PBR maps, detail, use case, rigging</span>
+            <div class="checks" id="trait-checks"></div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Target engine — drives FBX axis, scale, collision conventions, lightmap UV channel.">Engine Export Target (optional)</span>
+            <select id="sel-export" onchange="buildPrompt()">
+                <option value="">No specific target...</option>
+                <option value="blender">Blender — FBX/OBJ/glTF, scale 1.0m</option>
+                <option value="unity">Unity — FBX/glTF, 1m scale, Y-up, pivot at base, lightmap UV2</option>
+                <option value="unreal">Unreal — FBX, Z-up, 1cm units, UCX_ collision, smoothing groups</option>
+                <option value="gltf">glTF / GLB — open-standard, PBR-native, web-ready</option>
+                <option value="usd">USD — Pixar Universal Scene Description, DCC interchange</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Triangle budget — drives LOD strategy. State a number or use a preset.">Polycount Budget (optional)</span>
+            <select id="sel-polycount" onchange="buildPrompt()">
+                <option value="">No budget specified...</option>
+                <option value="mobile">Mobile — under 5k triangles</option>
+                <option value="vr">VR — under 15k triangles</option>
+                <option value="game">Game — 15k to 50k triangles</option>
+                <option value="hero">Hero / cinematic — 50k to 200k triangles</option>
+                <option value="film">Film / sculpt — 1M+ triangles, no budget</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Things to exclude — written as 'avoid: X, Y, Z'.">Negative Prompt (optional)</span>
+            <textarea
+                class="text-input"
+                id="txt-negative"
+                placeholder="floating geometry, non-manifold edges, n-gons, inverted normals"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Anything else — material references, scale notes, rig requirements, texture resolution.">Extra (optional)</span>
+            <textarea
+                class="text-input tall"
+                id="txt-extra"
+                placeholder="e.g. 2K texture resolution, single UDIM, ready for Mixamo auto-rig"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="output-section">
+            <div class="output-label">Generated Prompt</div>
+            <textarea id="prompt-box" class="prompt-area"></textarea>
+            <div class="btn-row">
+                <button onclick="copyPrompt()">Copy</button>
+                <button onclick="resetAll()">Reset</button>
+                <span class="toast" id="toast">Copied!</span>
+            </div>
+        </div>
+        <br />
+        <p><a href="index.html">&larr; Back to prompt builder hub</a></p>
+
+        <script>
+            const toolchainOptions = [
+                { value: "meshy", label: "Meshy.ai" },
+                { value: "tripo", label: "Tripo3D" },
+                { value: "rodin", label: "Rodin (Hyper3D)" },
+                { value: "trellis", label: "Microsoft TRELLIS" },
+                { value: "hunyuan3d", label: "Tencent Hunyuan3D" },
+                { value: "stable-fast-3d", label: "Stable Fast 3D" },
+                { value: "instantmesh", label: "InstantMesh" },
+            ];
+
+            const toolchainPrompts = {
+                meshy:
+                    "Target Meshy.ai. Text-to-3D or image-to-3D. Request texture refine pass. PBR map output (base color, normal, roughness, metallic, AO). Optional auto-retopology and auto-rig.",
+                tripo:
+                    "Target Tripo3D / TripoSR. Fast text-to-3D. Request quad retopology mode and PBR materials. Image-to-3D supports single or multi-view input.",
+                rodin:
+                    "Target Rodin / Hyper3D. High-fidelity 3D from image references. Supply multi-view inputs (front, side, back) for best geometry accuracy.",
+                trellis:
+                    "Target Microsoft TRELLIS. Image-to-3D with structured latent. Outputs mesh + 3D Gaussian + radiance field — request the format you need.",
+                hunyuan3d:
+                    "Target Hunyuan3D (Tencent). Open-source weights. Text or image to textured mesh. State target poly budget if known.",
+                "stable-fast-3d":
+                    "Target Stable Fast 3D (Stability AI). Seconds-fast image-to-3D. UV-unwrapped mesh output ready for engine import.",
+                instantmesh:
+                    "Target InstantMesh. Feed-forward sparse-view image-to-mesh reconstruction. Provide one or more reference views.",
+            };
+
+            const styleOptions = [
+                { value: "pbr", label: "PBR-ready", prompt: "Output PBR-ready — separate base color, normal (tangent space), roughness, metallic, AO maps. Handle sRGB vs linear correctly." },
+                { value: "game-ready", label: "Game-ready", prompt: "Game-ready asset — quad topology, clean non-overlapping UVs, single material slot, optimized triangle count, LOD-friendly silhouette." },
+                { value: "low-poly", label: "Low-poly stylized", prompt: "Low-poly stylized — flat-shaded faces, exaggerated forms, no smoothing groups, baked vertex color." },
+                { value: "high-poly", label: "High-poly sculpt", prompt: "High-poly sculpt — millions of polygons, fine surface detail, suitable for baking down to game-ready normal maps." },
+                { value: "photogrammetry", label: "Photogrammetry style", prompt: "Photogrammetry style — scanned realism, dense triangulation, baked albedo from photo reference." },
+                { value: "printable", label: "3D-print-ready", prompt: "3D-print-ready — manifold solid, consistent outward normals, no internal geometry, fully watertight mesh." },
+                { value: "stylized-pbr", label: "Stylized PBR", prompt: "Stylized PBR — hand-painted feel with PBR maps for engine compatibility (Overwatch / Riot style)." },
+            ];
+
+            const traitGroups = [
+                {
+                    label: "Topology",
+                    items: [
+                        ["Quad topology", "All polygons are 4-sided quads — required for sub-D and clean deformation"],
+                        ["Triangulated", "All faces are triangles — engine-ready but harder to edit/subdivide"],
+                        ["All-quad sub-D ready", "Pure quad mesh ready for subdivision-surface smoothing"],
+                        ["Retopologized", "Hand-built low-poly mesh over a high-poly sculpt"],
+                        ["Even edge flow", "Edges follow natural surface contours — clean deformation"],
+                        ["Pole-free", "No 5+ edges meeting at a vertex — avoids pinching under subdivision"],
+                    ],
+                },
+                {
+                    label: "UVs",
+                    items: [
+                        ["UV unwrapped", "Mesh flattened to 2D UV layout for texture mapping"],
+                        ["Non-overlapping UVs", "Each surface has unique UV space — required for baking maps"],
+                        ["Single UDIM", "All UVs in 0–1 space — standard for game engines"],
+                        ["UV checker tested", "Verified with checker texture for even texel density"],
+                        ["Lightmap UV channel", "Secondary UV channel for baked lighting (Unity/Unreal)"],
+                    ],
+                },
+                {
+                    label: "PBR Maps",
+                    items: [
+                        ["Base color map", "Albedo/diffuse — surface color without lighting baked in"],
+                        ["Normal map (tangent space)", "Per-pixel surface direction — fakes high-poly detail on low-poly mesh"],
+                        ["Roughness map", "Surface roughness 0–1 — controls specular highlight sharpness"],
+                        ["Metallic map", "Metallic vs dielectric mask — PBR metallic workflow"],
+                        ["Ambient occlusion baked", "Pre-computed contact shadow — adds grounded depth"],
+                        ["Displacement map", "True geometry offset based on height — for renders/sub-D"],
+                        ["Emissive map", "Self-illuminated areas — lights, screens, glowing parts"],
+                        ["Height map", "Greyscale height data for parallax or displacement"],
+                    ],
+                },
+                {
+                    label: "Surface Detail",
+                    items: [
+                        ["Subsurface scattering", "Light penetrates surface (skin, wax, jade) — soft translucent quality"],
+                        ["Hard surface", "Mechanical/manufactured forms — bevels, panel lines, clean edges"],
+                        ["Organic sculpt", "Natural forms — anatomy, creatures, terrain"],
+                        ["Tileable surface", "Texture/mesh tiles seamlessly for repeating coverage"],
+                        ["Sharp edge bevels", "Small chamfers on hard edges — required for proper specular pickup"],
+                        ["Weathered / aged", "Surface wear, rust, dirt, scratches — narrative texture"],
+                    ],
+                },
+                {
+                    label: "Use Case",
+                    items: [
+                        ["Real-time engine ready", "Optimized for Unity/Unreal — under polycount budget, baked maps"],
+                        ["VR-optimized", "Aggressive poly budget for VR frame-rate targets (90+ fps)"],
+                        ["Mobile poly budget", "Stripped further for mobile GPU constraints"],
+                        ["Cinematic high-detail", "Render-quality detail — millions of polys, ray-traced subsurface"],
+                        ["Web / glTF target", "Optimized for browser delivery — modest size, PBR-native"],
+                    ],
+                },
+                {
+                    label: "Rigging",
+                    items: [
+                        ["Riggable (clean topology)", "Edge loops at deformation areas (elbows, knees, mouth) for animation"],
+                        ["T-pose neutral", "Character arms straight out — standard for skinning"],
+                        ["A-pose neutral", "Arms angled down at ~45° — more natural shoulder rest state"],
+                        ["Mixamo-compatible", "Humanoid topology and proportions compatible with Mixamo auto-rigging"],
+                    ],
+                },
+            ];
+
+            const state = { traits: [] };
+
+            function init() {
+                populateSelect("sel-toolchain", toolchainOptions, "Choose platform...");
+                populateSelect("sel-style", styleOptions, "No specific convention...");
+                populateTraits();
+            }
+
+            function populateSelect(id, options, placeholder) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = `<option value="">${placeholder}</option>`;
+                for (const o of options) {
+                    const opt = document.createElement("option");
+                    opt.value = o.value;
+                    opt.textContent = o.label;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function populateTraits() {
+                const container = document.getElementById("trait-checks");
+                container.innerHTML = "";
+                for (const group of traitGroups) {
+                    const divider = document.createElement("div");
+                    divider.className = "section-divider";
+                    divider.textContent = group.label;
+                    container.appendChild(divider);
+                    for (const [name, tip] of group.items) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute("data-tip", tip);
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = name;
+                        cb.onchange = updateTraitsAndBuild;
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(name));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateTraitsAndBuild() {
+                state.traits = [
+                    ...document.querySelectorAll("#trait-checks input:checked"),
+                ].map((c) => c.value);
+                buildPrompt();
+            }
+
+            function lookup(options, value) {
+                return options.find((o) => o.value === value);
+            }
+
+            function buildPrompt() {
+                const parts = [];
+
+                const tc = document.getElementById("sel-toolchain").value;
+                if (tc && toolchainPrompts[tc]) {
+                    parts.push("[" + toolchainPrompts[tc] + "]");
+                }
+
+                const subject = document
+                    .getElementById("txt-subject")
+                    .value.trim();
+                if (subject) {
+                    parts.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
+                }
+
+                const styleVal = document.getElementById("sel-style").value;
+                const style = lookup(styleOptions, styleVal);
+                if (style) parts.push(style.prompt);
+
+                if (state.traits.length) {
+                    parts.push(state.traits.join(", ") + ".");
+                }
+
+                const scopeVal = document.getElementById("sel-scope").value;
+                const scopeMap = {
+                    single: "Single hero asset — high fidelity, one mesh.",
+                    set: "Asset set — multiple related meshes sharing style and scale.",
+                    "modular-kit": "Modular kit — interlocking tiles/pieces with consistent grid snap.",
+                    "char-full-body": "Full-body character — head to toe, rigging-ready neutral pose.",
+                    "char-bust": "Bust / portrait — head and shoulders only.",
+                    "char-turntable": "Turntable views — front, 3-quarter, side, back with consistent style.",
+                    "tileable-texture": "Tileable material — seamless on all 4 edges, full PBR map set.",
+                    "trim-sheet": "Trim sheet — multiple texture strips in one sheet for UV mapping.",
+                };
+                if (scopeMap[scopeVal]) parts.push(scopeMap[scopeVal]);
+
+                const exportVal = document.getElementById("sel-export").value;
+                const exportMap = {
+                    blender: "Output Blender-ready — FBX / OBJ / glTF, scale 1.0 meters, declare axis orientation (Y-up vs Z-up) explicitly.",
+                    unity: "Output Unity-ready — FBX or glTF, 1m scale, Y-up orientation, pivot at base, lightmap UV channel (UV2).",
+                    unreal: "Output Unreal-ready — FBX, Z-up orientation, 1 unit = 1 cm, separate collision mesh (UCX_ prefix), smoothing groups exported.",
+                    gltf: "Output glTF / GLB — open-standard PBR-native, single binary file, web-ready compression.",
+                    usd: "Output USD (Universal Scene Description) — Pixar interchange format, DCC-agnostic.",
+                };
+                if (exportMap[exportVal]) parts.push(exportMap[exportVal]);
+
+                const polyVal = document.getElementById("sel-polycount").value;
+                const polyMap = {
+                    mobile: "Polycount budget: under 5k triangles (mobile target).",
+                    vr: "Polycount budget: under 15k triangles (VR target, 90+ fps).",
+                    game: "Polycount budget: 15k to 50k triangles (game target).",
+                    hero: "Polycount budget: 50k to 200k triangles (hero / cinematic).",
+                    film: "Polycount budget: 1M+ triangles (film / sculpt, no real-time budget).",
+                };
+                if (polyMap[polyVal]) parts.push(polyMap[polyVal]);
+
+                const extra = document.getElementById("txt-extra").value.trim();
+                if (extra) parts.push(extra);
+
+                const hasAny =
+                    tc || subject || styleVal || state.traits.length ||
+                    scopeVal || exportVal || polyVal || extra ||
+                    document.getElementById("txt-negative").value.trim();
+                if (!hasAny) {
+                    document.getElementById("prompt-box").value = "";
+                    return;
+                }
+
+                parts.push(
+                    "Output as a single self-contained generation prompt ready to paste into the target platform. Front-load subject and form; technical spec follows.",
+                );
+
+                let main = parts.join(" ");
+
+                const negative = document
+                    .getElementById("txt-negative")
+                    .value.trim();
+                if (negative) {
+                    main += "\n\nAvoid: " + negative;
+                }
+
+                document.getElementById("prompt-box").value = main;
+            }
+
+            function copyPrompt() {
+                navigator.clipboard
+                    .writeText(document.getElementById("prompt-box").value)
+                    .then(() => {
+                        const msg = document.getElementById("toast");
+                        msg.classList.add("show");
+                        setTimeout(() => msg.classList.remove("show"), 1500);
+                    });
+            }
+
+            function resetAll() {
+                document.getElementById("sel-toolchain").value = "";
+                document.getElementById("sel-style").value = "";
+                document.getElementById("txt-subject").value = "";
+                document.getElementById("sel-scope").value = "";
+                document.getElementById("sel-export").value = "";
+                document.getElementById("sel-polycount").value = "";
+                document.getElementById("txt-negative").value = "";
+                document.getElementById("txt-extra").value = "";
+                state.traits = [];
+                document
+                    .querySelectorAll("#trait-checks input:checked")
+                    .forEach((c) => (c.checked = false));
+                document.getElementById("prompt-box").value = "";
+            }
+
+            init();
+        </script>
+    </body>
+</html>

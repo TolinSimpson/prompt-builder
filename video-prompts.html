@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Video Prompt Builder</title>
+        <style>
+            * { margin: 0; box-sizing: border-box; }
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 760px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+                background: #fafafa;
+            }
+            h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+            .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+            .step { margin-bottom: 1rem; }
+            .step-label {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+            }
+            .step-hint { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; }
+            select, .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font: inherit;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+            }
+            select { cursor: pointer; }
+            select:focus, .text-input:focus {
+                outline: 2px solid #4a90d9;
+                border-color: #4a90d9;
+            }
+            .text-input { resize: none; height: 2.4rem; }
+            .text-input.tall { height: 3.6rem; }
+            .checks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
+            .checks label {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.82rem;
+                cursor: pointer;
+                padding: 0.25rem 0.55rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                user-select: none;
+                position: relative;
+            }
+            .checks label:has(input:checked) {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .checks input { display: none; }
+            .section-divider {
+                font-size: 0.7rem;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin: 0.5rem 0 0.15rem;
+                width: 100%;
+            }
+            .output-section {
+                margin-top: 1.5rem;
+                border-top: 1px solid #ddd;
+                padding-top: 1rem;
+            }
+            .output-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            .prompt-area {
+                width: 100%;
+                min-height: 120px;
+                padding: 0.75rem;
+                font: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                resize: vertical;
+                color: #222;
+            }
+            .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+            button {
+                padding: 0.4rem 1rem;
+                font: inherit;
+                cursor: pointer;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #f5f5f5;
+            }
+            button:hover { background: #e0e0e0; }
+            .toast {
+                font-size: 0.8rem;
+                color: #2e7d32;
+                align-self: center;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .toast.show { opacity: 1; }
+            [data-tip] { position: relative; }
+            [data-tip]::after {
+                content: attr(data-tip);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.72rem;
+                line-height: 1.35;
+                padding: 0.35rem 0.55rem;
+                border-radius: 4px;
+                white-space: normal;
+                width: max-content;
+                max-width: 260px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 10;
+            }
+            [data-tip]:hover::after { opacity: 1; }
+        </style>
+    </head>
+    <body>
+        <h1>Video Prompt Builder</h1>
+        <p class="subtitle">
+            Build platform-tuned prompt for video generation. Hover labels for
+            cinema/camera definitions.
+        </p>
+
+        <div class="step">
+            <span class="step-label" data-tip="Target video-gen platform. Sets native syntax — Higgsfield camera presets, Runway motion brush, Sora long-form coherence, etc.">Target Platform</span>
+            <select id="sel-toolchain" onchange="buildPrompt()">
+                <option value="">Choose platform...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Overall visual treatment. Sets aesthetic baseline (24fps film, documentary, commercial, music video, etc.).">Style</span>
+            <select id="sel-style" onchange="buildPrompt()">
+                <option value="">No specific style...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="The scene you want — subject, setting, action, story beat. Cover spatial and temporal detail.">Scene</span>
+            <span class="step-hint">Describe the clip — subject, setting, action across time</span>
+            <textarea
+                class="text-input tall"
+                id="txt-subject"
+                placeholder="e.g. astronaut steps off lunar lander, planet earth rising on horizon, dust kicked up in slow motion"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Clip length and structure — short single shot, standard with camera move, extended scene, or seamless loop.">Duration / Scope</span>
+            <select id="sel-scope" onchange="buildPrompt()">
+                <option value="">No preference...</option>
+                <option value="short">Short clip — 3 to 5 seconds, single shot</option>
+                <option value="standard">Standard clip — 5 to 10 seconds, one camera move</option>
+                <option value="extended">Extended clip — 10 to 30 seconds, scene with cuts</option>
+                <option value="loop">Seamless loop — start frame matches end frame</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Aspect ratio drives platform delivery (16:9 for YouTube, 9:16 for TikTok/Reels, 21:9 for anamorphic).">Aspect Ratio</span>
+            <select id="sel-aspect" onchange="buildPrompt()">
+                <option value="">No preference...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Camera moves + shot types + lens + lighting + speed/time — pick all that apply. Tooltips define each term.">Cinematography</span>
+            <span class="step-hint">Camera move, shot type, lens, lighting, speed effect</span>
+            <div class="checks" id="trait-checks"></div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Things to exclude — written as 'avoid: X, Y, Z' for most platforms.">Negative Prompt (optional)</span>
+            <textarea
+                class="text-input"
+                id="txt-negative"
+                placeholder="cuts, jump cuts, jitter, low resolution, distorted faces"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Anything else — references, music sync notes, sound design, specific color treatment.">Extra (optional)</span>
+            <textarea
+                class="text-input tall"
+                id="txt-extra"
+                placeholder="e.g. reference: Denis Villeneuve cinematography, slow tonal build"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="output-section">
+            <div class="output-label">Generated Prompt</div>
+            <textarea id="prompt-box" class="prompt-area"></textarea>
+            <div class="btn-row">
+                <button onclick="copyPrompt()">Copy</button>
+                <button onclick="resetAll()">Reset</button>
+                <span class="toast" id="toast">Copied!</span>
+            </div>
+        </div>
+        <br />
+        <p><a href="index.html">&larr; Back to prompt builder hub</a></p>
+
+        <script>
+            const toolchainOptions = [
+                { value: "higgsfield", label: "Higgsfield.ai" },
+                { value: "runway-gen3", label: "Runway Gen-3" },
+                { value: "sora", label: "OpenAI Sora" },
+                { value: "kling", label: "Kling AI" },
+                { value: "pika", label: "Pika 2.0" },
+                { value: "luma", label: "Luma Dream Machine" },
+                { value: "hailuo", label: "Hailuo (MiniMax)" },
+                { value: "veo", label: "Google Veo" },
+            ];
+
+            const toolchainPrompts = {
+                higgsfield:
+                    "Target Higgsfield.ai. Phrase camera moves using the platform's named cinematic presets: dolly in/out, orbit, crane, DOF rack, whip pan. Describe the subject, then chain the camera move.",
+                "runway-gen3":
+                    "Target Runway Gen-3 Alpha / Turbo. Text-to-video or image-to-video. State explicit camera direction (push in, pull out, pan left). Mention motion brush regions if applicable.",
+                sora:
+                    "Target OpenAI Sora. Rich natural language with spatial and temporal detail. Describe the world, the subject's action across time, and scene continuity. Long-form coherent.",
+                kling:
+                    "Target Kling AI. Realistic motion physics. Specify a clear first-frame state and the motion that follows. Image-to-video is the strength — describe the desired motion of the source image.",
+                pika:
+                    "Target Pika 2.0. Short stylized clips. Invoke Pikaffects by name (explode, melt, inflate, deflate, squish). Lipsync supported — declare it explicitly.",
+                luma:
+                    "Target Luma Dream Machine. Use keyframe-based camera path direction. Photorealistic output. Best with image-to-video and clear camera motion description.",
+                hailuo:
+                    "Target Hailuo (MiniMax video-01). Strong character consistency and expressive motion. Describe character anchors first, then motion and scene.",
+                veo:
+                    "Target Google Veo / Veo 2. Fluent cinematic terminology (focal lengths, lens names, lighting). Long-form coherence at 1080p+.",
+            };
+
+            const styleOptions = [
+                { value: "cinematic", label: "Cinematic 24fps", prompt: "Cinematic 24fps style — film-style motion blur, anamorphic framing, deliberate camera choreography, color graded look." },
+                { value: "documentary", label: "Documentary", prompt: "Documentary style — handheld realism, natural lighting, observational framing, minimal post-processing." },
+                { value: "commercial", label: "Commercial", prompt: "Commercial style — punchy cuts, hero subject framing, controlled studio lighting, polished color grade." },
+                { value: "music-video", label: "Music video", prompt: "Music video style — beat-synced motion, stylized color, dynamic camera moves, surreal transitions." },
+                { value: "social-vertical", label: "Social vertical (9:16)", prompt: "Vertical 9:16 social format — full-frame subject, fast hook within first second, captions-aware framing." },
+                { value: "animation-3d", label: "3D animation", prompt: "3D animated style — rendered geometry, physically based materials, exaggerated motion arcs and anticipation." },
+                { value: "anime-2d", label: "2D anime", prompt: "2D anime style — cel-shaded color, expressive characters, dynamic action keyframes." },
+                { value: "stop-motion", label: "Stop motion", prompt: "Stop motion style — frame-by-frame physical-puppet feel, tactile textures, characteristic micro-jitter." },
+            ];
+
+            const aspectOptions = [
+                { value: "16:9", label: "Widescreen 16:9", prompt: "16:9 widescreen aspect." },
+                { value: "21:9", label: "Ultrawide 21:9 (anamorphic)", prompt: "21:9 ultrawide anamorphic aspect." },
+                { value: "9:16", label: "Vertical 9:16", prompt: "9:16 vertical aspect." },
+                { value: "1:1", label: "Square 1:1", prompt: "1:1 square aspect." },
+                { value: "4:3", label: "Academy 4:3", prompt: "4:3 academy aspect (vintage feel)." },
+            ];
+
+            const traitGroups = [
+                {
+                    label: "Camera Move",
+                    items: [
+                        ["Punch in", "Quick zoom or cut closer mid-shot — emphasis, energy"],
+                        ["Punch out", "Quick zoom-out reveal — opens scope"],
+                        ["Dolly in", "Camera physically moves toward subject — intimacy"],
+                        ["Dolly out", "Camera physically moves away — opens context, emotional finale"],
+                        ["Truck left", "Camera moves sideways to the left — parallax"],
+                        ["Truck right", "Camera moves sideways to the right — parallax"],
+                        ["Trolley out", "Camera retreats on dolly/tracks as subject continues — spatial reveal"],
+                        ["Pan", "Camera rotates horizontally from a fixed point"],
+                        ["Tilt", "Camera rotates vertically from a fixed point"],
+                        ["Crane up", "Boom-mounted camera rises — sweeping reveal"],
+                        ["Crane down", "Boom-mounted camera descends — focused emphasis"],
+                        ["Whip pan", "Extremely fast pan — motion blur transition"],
+                        ["Tracking shot", "Camera follows a moving subject in parallel"],
+                        ["Push pull (vertigo)", "Dolly forward while zooming out (or reverse) — Hitchcock zoom, unsettling"],
+                        ["Orbit", "Camera circles subject — 360-degree showcase"],
+                        ["Steadicam", "Smooth handheld float — operator with stabilizer rig"],
+                        ["Handheld", "Untreated handheld — kinetic, naturalistic shake"],
+                        ["Static lockdown", "Camera fixed on tripod — composition-first"],
+                        ["Gimbal float", "Modern stabilized handheld — smooth but mobile"],
+                    ],
+                },
+                {
+                    label: "Shot Type",
+                    items: [
+                        ["Master shot", "Wide that covers entire scene action — assembly anchor"],
+                        ["Insert", "Tight cutaway to detail (clock, hand, prop)"],
+                        ["Cutaway", "Brief shot away from main action for context or rhythm"],
+                        ["Reaction shot", "Cut to subject's response to off-screen action"],
+                        ["Establishing shot", "Wide that sets location, time, mood"],
+                        ["POV shot", "Subjective camera as character's eyes"],
+                        ["Two-shot", "Frame contains two subjects — dialog coverage"],
+                        ["Over-the-shoulder", "Frame from behind one subject viewing another"],
+                        ["Close-up", "Head and shoulders fill the frame — intimacy"],
+                        ["Wide shot", "Subject within full environment — context, scale"],
+                    ],
+                },
+                {
+                    label: "Lens",
+                    items: [
+                        ["24mm wide", "Wide-angle — landscapes, environments"],
+                        ["35mm", "Slightly wide — natural documentary feel"],
+                        ["50mm normal", "'Normal' focal length — closest to human eye"],
+                        ["85mm portrait", "Short telephoto — flattering compression"],
+                        ["135mm telephoto", "Long focal length — strong subject isolation"],
+                        ["Anamorphic 2.39:1", "Anamorphic character — oval bokeh, horizontal flares"],
+                        ["Shallow depth of field", "Narrow plane of focus — blurred background"],
+                        ["Deep focus", "Everything sharp — environmental clarity"],
+                    ],
+                },
+                {
+                    label: "Lighting",
+                    items: [
+                        ["Golden hour", "Warm low sun after sunrise / before sunset"],
+                        ["Blue hour", "Cool twilight before sunrise / after sunset"],
+                        ["Three-point lighting", "Key + fill + back — controlled studio"],
+                        ["Rim lighting", "Light from behind/side outlining edge"],
+                        ["Soft natural", "Window light, overcast — gentle realistic"],
+                        ["Hard directional", "Sharp shadows, dramatic"],
+                        ["Volumetric god rays", "Visible light shafts through atmosphere"],
+                        ["Neon practicals", "Visible neon/LED signs as in-frame light"],
+                        ["High contrast", "Pronounced light/dark separation"],
+                    ],
+                },
+                {
+                    label: "Speed / Time",
+                    items: [
+                        ["Slow motion 120fps", "High frame rate, played back slower — magnifies micro-moments"],
+                        ["Time-lapse", "Long interval captured, played fast"],
+                        ["Hyperlapse", "Time-lapse with camera moving through space"],
+                        ["Speed ramp", "Variable playback speed within a single shot"],
+                        ["Real-time", "Standard 24/30 fps playback, no speed manipulation"],
+                    ],
+                },
+                {
+                    label: "Aesthetic",
+                    items: [
+                        ["Film grain", "Visible analog grain texture"],
+                        ["Color graded", "Specific post treatment — teal/orange, bleach bypass"],
+                        ["High dynamic range", "Extended tonal range, shadow to highlight"],
+                        ["Monochrome", "Single-color or black-and-white"],
+                        ["Muted palette", "Desaturated tones — somber, restrained"],
+                        ["Vibrant saturation", "Pushed color intensity — punchy, energetic"],
+                    ],
+                },
+            ];
+
+            const state = { traits: [] };
+
+            function init() {
+                populateSelect("sel-toolchain", toolchainOptions, "Choose platform...");
+                populateSelect("sel-style", styleOptions, "No specific style...");
+                populateSelect("sel-aspect", aspectOptions, "No preference...");
+                populateTraits();
+            }
+
+            function populateSelect(id, options, placeholder) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = `<option value="">${placeholder}</option>`;
+                for (const o of options) {
+                    const opt = document.createElement("option");
+                    opt.value = o.value;
+                    opt.textContent = o.label;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function populateTraits() {
+                const container = document.getElementById("trait-checks");
+                container.innerHTML = "";
+                for (const group of traitGroups) {
+                    const divider = document.createElement("div");
+                    divider.className = "section-divider";
+                    divider.textContent = group.label;
+                    container.appendChild(divider);
+                    for (const [name, tip] of group.items) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute("data-tip", tip);
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = name;
+                        cb.onchange = updateTraitsAndBuild;
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(name));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateTraitsAndBuild() {
+                state.traits = [
+                    ...document.querySelectorAll("#trait-checks input:checked"),
+                ].map((c) => c.value);
+                buildPrompt();
+            }
+
+            function lookup(options, value) {
+                return options.find((o) => o.value === value);
+            }
+
+            function buildPrompt() {
+                const parts = [];
+
+                const tc = document.getElementById("sel-toolchain").value;
+                if (tc && toolchainPrompts[tc]) {
+                    parts.push("[" + toolchainPrompts[tc] + "]");
+                }
+
+                const subject = document
+                    .getElementById("txt-subject")
+                    .value.trim();
+                if (subject) {
+                    parts.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
+                }
+
+                const styleVal = document.getElementById("sel-style").value;
+                const style = lookup(styleOptions, styleVal);
+                if (style) parts.push(style.prompt);
+
+                if (state.traits.length) {
+                    parts.push(state.traits.join(", ") + ".");
+                }
+
+                const aspectVal = document.getElementById("sel-aspect").value;
+                const aspect = lookup(aspectOptions, aspectVal);
+                if (aspect) parts.push(aspect.prompt);
+
+                const scopeVal = document.getElementById("sel-scope").value;
+                const scopeMap = {
+                    short: "Short clip — 3 to 5 seconds, single shot.",
+                    standard: "Standard clip — 5 to 10 seconds, one camera move.",
+                    extended: "Extended clip — 10 to 30 seconds, scene with cuts or continuous coverage.",
+                    loop: "Seamless loop — start frame matches end frame for clean repetition.",
+                };
+                if (scopeMap[scopeVal]) parts.push(scopeMap[scopeVal]);
+
+                const extra = document.getElementById("txt-extra").value.trim();
+                if (extra) parts.push(extra);
+
+                const hasAny =
+                    tc || subject || styleVal || state.traits.length ||
+                    aspectVal || scopeVal || extra ||
+                    document.getElementById("txt-negative").value.trim();
+                if (!hasAny) {
+                    document.getElementById("prompt-box").value = "";
+                    return;
+                }
+
+                parts.push(
+                    "Output as a single self-contained generation prompt ready to paste into the target platform. Front-load the most important visual and motion cues.",
+                );
+
+                let main = parts.join(" ");
+
+                const negative = document
+                    .getElementById("txt-negative")
+                    .value.trim();
+                if (negative) {
+                    main += "\n\nAvoid: " + negative;
+                }
+
+                document.getElementById("prompt-box").value = main;
+            }
+
+            function copyPrompt() {
+                navigator.clipboard
+                    .writeText(document.getElementById("prompt-box").value)
+                    .then(() => {
+                        const msg = document.getElementById("toast");
+                        msg.classList.add("show");
+                        setTimeout(() => msg.classList.remove("show"), 1500);
+                    });
+            }
+
+            function resetAll() {
+                document.getElementById("sel-toolchain").value = "";
+                document.getElementById("sel-style").value = "";
+                document.getElementById("txt-subject").value = "";
+                document.getElementById("sel-aspect").value = "";
+                document.getElementById("sel-scope").value = "";
+                document.getElementById("txt-negative").value = "";
+                document.getElementById("txt-extra").value = "";
+                state.traits = [];
+                document
+                    .querySelectorAll("#trait-checks input:checked")
+                    .forEach((c) => (c.checked = false));
+                document.getElementById("prompt-box").value = "";
+            }
+
+            init();
+        </script>
+    </body>
+</html>

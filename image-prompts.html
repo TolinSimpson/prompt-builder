@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Image Prompt Builder</title>
+        <style>
+            * { margin: 0; box-sizing: border-box; }
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 760px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+                background: #fafafa;
+            }
+            h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+            .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+            .step { margin-bottom: 1rem; }
+            .step-label {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+            }
+            .step-hint { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; }
+            select, .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font: inherit;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+            }
+            select { cursor: pointer; }
+            select:focus, .text-input:focus {
+                outline: 2px solid #4a90d9;
+                border-color: #4a90d9;
+            }
+            .text-input { resize: none; height: 2.4rem; }
+            .text-input.tall { height: 3.6rem; }
+            .checks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
+            .checks label {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.82rem;
+                cursor: pointer;
+                padding: 0.25rem 0.55rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                user-select: none;
+                position: relative;
+            }
+            .checks label:has(input:checked) {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .checks input { display: none; }
+            .section-divider {
+                font-size: 0.7rem;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin: 0.5rem 0 0.15rem;
+                width: 100%;
+            }
+            .output-section {
+                margin-top: 1.5rem;
+                border-top: 1px solid #ddd;
+                padding-top: 1rem;
+            }
+            .output-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            .prompt-area {
+                width: 100%;
+                min-height: 120px;
+                padding: 0.75rem;
+                font: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                resize: vertical;
+                color: #222;
+            }
+            .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+            button {
+                padding: 0.4rem 1rem;
+                font: inherit;
+                cursor: pointer;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #f5f5f5;
+            }
+            button:hover { background: #e0e0e0; }
+            .toast {
+                font-size: 0.8rem;
+                color: #2e7d32;
+                align-self: center;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .toast.show { opacity: 1; }
+            [data-tip] { position: relative; }
+            [data-tip]::after {
+                content: attr(data-tip);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.72rem;
+                line-height: 1.35;
+                padding: 0.35rem 0.55rem;
+                border-radius: 4px;
+                white-space: normal;
+                width: max-content;
+                max-width: 260px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 10;
+            }
+            [data-tip]:hover::after { opacity: 1; }
+        </style>
+    </head>
+    <body>
+        <h1>Image Prompt Builder</h1>
+        <p class="subtitle">
+            Build platform-tuned prompt for image generation. Hover labels for
+            photography/cinema definitions.
+        </p>
+
+        <div class="step">
+            <span class="step-label" data-tip="Target image-gen platform. Sets native syntax — Midjourney parameters, SDXL token weights, DALL-E natural language, etc.">Target Platform</span>
+            <select id="sel-toolchain" onchange="buildPrompt()">
+                <option value="">Choose platform...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Overall visual style. Sets aesthetic baseline before composition and lighting layer on.">Style</span>
+            <select id="sel-style" onchange="buildPrompt()">
+                <option value="">No specific style...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="The image you want — subject, setting, action. Be concrete and specific.">Subject</span>
+            <span class="step-hint">Describe the image — subject, setting, action, mood</span>
+            <textarea
+                class="text-input tall"
+                id="txt-subject"
+                placeholder="e.g. lone knight in weathered armor on windswept cliff at dawn, fog drifting through valley below"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Image aspect ratio. Translates to platform-specific parameter (Midjourney --ar, SDXL image dimensions).">Aspect Ratio</span>
+            <select id="sel-aspect" onchange="buildPrompt()">
+                <option value="">No preference...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Camera + lens + framing + lighting + composition + aesthetic — pick all that apply. Tooltips define each term.">Composition &amp; Look</span>
+            <span class="step-hint">Camera angle, lens, lighting, composition, aesthetic</span>
+            <div class="checks" id="trait-checks"></div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Variation count or arrangement — single image, set of variations, or multi-view sheet.">Variations</span>
+            <select id="sel-variations" onchange="buildPrompt()">
+                <option value="">Single image (default)</option>
+                <option value="variations">Coherent set of 4 variations</option>
+                <option value="sheet">Character/asset sheet (multi-view)</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Things to exclude. SDXL/Flux expose dedicated negative prompt; for others, written as 'avoid: X, Y, Z'.">Negative Prompt (optional)</span>
+            <span class="step-hint">Excluded elements — blurry, distorted, extra limbs, low quality, etc.</span>
+            <textarea
+                class="text-input"
+                id="txt-negative"
+                placeholder="blurry, distorted, low quality, extra limbs, watermark"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Anything else — specific colors, props, references, technical constraints.">Extra (optional)</span>
+            <textarea
+                class="text-input tall"
+                id="txt-extra"
+                placeholder="e.g. teal-and-orange grade, reference: Roger Deakins cinematography"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="output-section">
+            <div class="output-label">Generated Prompt</div>
+            <textarea id="prompt-box" class="prompt-area"></textarea>
+            <div class="btn-row">
+                <button onclick="copyPrompt()">Copy</button>
+                <button onclick="resetAll()">Reset</button>
+                <span class="toast" id="toast">Copied!</span>
+            </div>
+        </div>
+        <br />
+        <p><a href="index.html">&larr; Back to prompt builder hub</a></p>
+
+        <script>
+            const toolchainOptions = [
+                { value: "midjourney", label: "Midjourney v6" },
+                { value: "dalle3", label: "DALL-E 3" },
+                { value: "sdxl", label: "Stable Diffusion XL" },
+                { value: "flux", label: "Flux.1" },
+                { value: "nanobanana", label: "Nano Banana (Gemini)" },
+                { value: "ideogram", label: "Ideogram" },
+                { value: "firefly", label: "Adobe Firefly" },
+                { value: "leonardo", label: "Leonardo.ai" },
+                { value: "recraft", label: "Recraft V3" },
+            ];
+
+            const toolchainPrompts = {
+                midjourney:
+                    "Target Midjourney v6. Terse comma-delimited phrasing. Suffix parameters: --ar <w:h> --stylize 0-1000 --chaos 0-100 --seed <n> --weird 0-3000 --v 6. Front-load the most important visual cues.",
+                dalle3:
+                    "Target DALL-E 3. Natural-language descriptive sentences — the GPT-4 rewriter expects coherent paragraphs. No parameter syntax. State subject, style, camera, and lighting explicitly.",
+                sdxl:
+                    "Target Stable Diffusion XL. Token-weighted prompt with parenthetical weights like (subject:1.3). Provide a separate negative prompt for exclusions. Suggest sampler (DPM++ 2M Karras), CFG 4-8, 25-40 steps.",
+                flux:
+                    "Target Flux.1 (Schnell / Dev / Pro). Hybrid prose + tag style. Strong prompt adherence — describe explicitly rather than relying on aesthetic tokens.",
+                nanobanana:
+                    "Target Nano Banana (Google Gemini 2.5 Flash Image). Descriptive natural language. Reference images supported. Strong character consistency across edits.",
+                ideogram:
+                    "Target Ideogram. Wrap any in-image text in double quotes — Ideogram leads the field in legible typography. Specify font feel (serif, sans, script) and color.",
+                firefly:
+                    "Target Adobe Firefly. Commercially safe model (licensed training). Use style references when available. Pair with Photoshop generative fill/expand workflow.",
+                leonardo:
+                    "Target Leonardo.ai. Specify model (Phoenix, Lightning XL, Vision XL) and preset style. Optionally request Alchemy refinement and image-to-image control mode.",
+                recraft:
+                    "Target Recraft V3. Specify vector vs raster output. Use brand-style presets. Strong text rendering for design and logo work.",
+            };
+
+            const styleOptions = [
+                { value: "photoreal", label: "Photorealistic", prompt: "Photorealistic style — physically accurate lighting, anatomy, surface detail." },
+                { value: "cinematic", label: "Cinematic", prompt: "Cinematic style — anamorphic framing, film grain, color graded, motion-picture lighting." },
+                { value: "illustration", label: "Illustration", prompt: "Illustration style — hand-drawn linework, painterly color, deliberate composition." },
+                { value: "concept-art", label: "Concept art", prompt: "Concept art style — moody atmosphere, narrative framing, gestural brushwork." },
+                { value: "anime", label: "Anime/manga", prompt: "Anime/manga style — cel-shaded color, clean linework, expressive eyes, dynamic poses." },
+                { value: "3d-render", label: "3D render look", prompt: "3D render style — PBR shading, ray-traced reflections, ambient occlusion, Octane/Unreal aesthetic." },
+                { value: "product", label: "Product photo", prompt: "Product photography style — seamless background, softbox key + rim light, sharp focus, commercial polish." },
+                { value: "vintage-film", label: "Vintage film", prompt: "Vintage film style — Kodachrome/Ektachrome color, halation, soft contrast, period-correct grain." },
+                { value: "watercolor", label: "Watercolor", prompt: "Watercolor style — soft wet-on-wet bleeds, visible paper texture, transparent layered pigment." },
+                { value: "ink-wash", label: "Ink wash", prompt: "Ink wash (sumi-e) style — gestural brushstrokes, monochrome ink, generous negative space." },
+                { value: "pixel-art", label: "Pixel art", prompt: "Pixel art style — limited palette, clean pixel grid, dithering, no anti-aliasing." },
+            ];
+
+            const aspectOptions = [
+                { value: "1:1", label: "Square 1:1", prompt: "Square 1:1 aspect ratio." },
+                { value: "16:9", label: "Widescreen 16:9", prompt: "Widescreen 16:9 aspect ratio." },
+                { value: "9:16", label: "Vertical 9:16", prompt: "Vertical 9:16 aspect ratio." },
+                { value: "4:5", label: "Portrait 4:5", prompt: "Portrait 4:5 aspect ratio." },
+                { value: "21:9", label: "Ultrawide 21:9", prompt: "Ultrawide 21:9 anamorphic aspect ratio." },
+                { value: "3:2", label: "Photo 3:2", prompt: "Photo 3:2 aspect ratio (35mm film standard)." },
+                { value: "2:3", label: "Vertical photo 2:3", prompt: "Vertical photo 2:3 aspect ratio." },
+            ];
+
+            const traitGroups = [
+                {
+                    label: "Camera Angle",
+                    items: [
+                        ["Low angle", "Camera below subject looking up — powerful, dominant, heroic"],
+                        ["High angle", "Camera above subject looking down — diminished, vulnerable, surveillance"],
+                        ["Eye-level", "Camera at subject's eye line — neutral, conversational"],
+                        ["Dutch angle", "Camera tilted off-axis — unease, disorientation"],
+                        ["Bird's-eye view", "Straight-down camera — abstract, map-like, omniscient"],
+                        ["Worm's-eye view", "Extreme low looking straight up — towering, monumental"],
+                        ["Over-the-shoulder", "Frame from behind one subject viewing another"],
+                        ["POV", "First-person perspective from character's eyes"],
+                    ],
+                },
+                {
+                    label: "Shot Framing",
+                    items: [
+                        ["Extreme close-up", "Tight on detail (eye, lips, object) — intensifies focus"],
+                        ["Close-up", "Head and shoulders fill the frame — emotional intimacy"],
+                        ["Medium shot", "Subject framed waist-up — conversational coverage"],
+                        ["Wide shot", "Subject within full environment — context, scale"],
+                        ["Establishing shot", "Wide setting location, time of day, mood"],
+                        ["Macro", "Extreme close-up of small details, shallow DOF"],
+                        ["Full body", "Subject head to toe"],
+                    ],
+                },
+                {
+                    label: "Lens",
+                    items: [
+                        ["14mm fisheye", "Ultra-wide with barrel distortion — immersive, exaggerated"],
+                        ["24mm wide", "Wide-angle — landscapes, environments"],
+                        ["35mm", "Slightly wide — natural documentary, environmental portrait"],
+                        ["50mm normal", "'Normal' focal length — closest to human eye"],
+                        ["85mm portrait", "Short telephoto — classic portrait, flattering compression and bokeh"],
+                        ["135mm telephoto", "Long focal length — strong subject isolation, compressed background"],
+                        ["Anamorphic 2.39:1", "Anamorphic character — oval bokeh, horizontal flares"],
+                        ["Tilt-shift", "Selective plane of focus — miniature effect"],
+                    ],
+                },
+                {
+                    label: "Lighting",
+                    items: [
+                        ["Three-point lighting", "Key + fill + back — controlled studio dimensionality"],
+                        ["Rim lighting", "Light behind/side outlining edge — separates from background"],
+                        ["Golden hour", "Warm low sun after sunrise / before sunset — soft long shadows"],
+                        ["Blue hour", "Twilight before sunrise / after sunset — cool deep blue ambient"],
+                        ["Chiaroscuro", "Strong dark/light contrast — Caravaggio, Rembrandt"],
+                        ["Soft diffused", "Large diffused source — gentle shadows, beauty"],
+                        ["Hard directional", "Small bright source — sharp shadows, dramatic"],
+                        ["Volumetric god rays", "Visible light shafts through atmosphere"],
+                        ["Neon practicals", "Visible neon/LED signs as in-frame light — cyberpunk"],
+                        ["Backlit silhouette", "Subject darkened against bright background — shape-driven"],
+                        ["Overcast natural", "Diffused sky — even, soft, no harsh shadows"],
+                    ],
+                },
+                {
+                    label: "Composition",
+                    items: [
+                        ["Rule of thirds", "Subject on intersection of thirds-grid lines"],
+                        ["Centered symmetry", "Subject dead-center, symmetrical — formal, iconic"],
+                        ["Leading lines", "Linear elements drawing eye toward subject"],
+                        ["Negative space", "Large empty area around subject — scale, isolation"],
+                        ["Foreground framing", "Foreground object frames subject (doorway, branches)"],
+                        ["Shallow depth of field", "Narrow plane of focus — blurred background"],
+                        ["Deep focus", "Everything sharp — environmental clarity"],
+                        ["Bokeh background", "Aesthetic blur with circular highlights"],
+                        ["Diagonal composition", "Subject and elements on diagonal axis — energy, motion"],
+                    ],
+                },
+                {
+                    label: "Color & Aesthetic",
+                    items: [
+                        ["Film grain", "Visible analog grain texture"],
+                        ["Color graded", "Specific post treatment — teal/orange, bleach bypass"],
+                        ["High dynamic range", "Extended tonal range, shadow to highlight"],
+                        ["Monochrome", "Single-color or black-and-white"],
+                        ["Pastel palette", "Soft, low-saturation — dreamy, gentle"],
+                        ["High contrast", "Pronounced light/dark separation"],
+                        ["Muted palette", "Desaturated tones — somber, restrained"],
+                        ["Vibrant saturation", "Pushed color intensity — punchy, energetic"],
+                        ["Sepia tone", "Warm brown monochrome — antique, nostalgic"],
+                        ["Crushed blacks", "Deep blacks with no shadow detail — moody"],
+                    ],
+                },
+            ];
+
+            const state = { traits: [] };
+
+            function init() {
+                populateSelect("sel-toolchain", toolchainOptions, "Choose platform...");
+                populateSelect("sel-style", styleOptions, "No specific style...");
+                populateSelect("sel-aspect", aspectOptions, "No preference...");
+                populateTraits();
+            }
+
+            function populateSelect(id, options, placeholder) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = `<option value="">${placeholder}</option>`;
+                for (const o of options) {
+                    const opt = document.createElement("option");
+                    opt.value = o.value;
+                    opt.textContent = o.label;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function populateTraits() {
+                const container = document.getElementById("trait-checks");
+                container.innerHTML = "";
+                for (const group of traitGroups) {
+                    const divider = document.createElement("div");
+                    divider.className = "section-divider";
+                    divider.textContent = group.label;
+                    container.appendChild(divider);
+                    for (const [name, tip] of group.items) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute("data-tip", tip);
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = name;
+                        cb.onchange = updateTraitsAndBuild;
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(name));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateTraitsAndBuild() {
+                state.traits = [
+                    ...document.querySelectorAll("#trait-checks input:checked"),
+                ].map((c) => c.value);
+                buildPrompt();
+            }
+
+            function lookup(options, value) {
+                return options.find((o) => o.value === value);
+            }
+
+            function buildPrompt() {
+                const parts = [];
+
+                const tc = document.getElementById("sel-toolchain").value;
+                if (tc && toolchainPrompts[tc]) {
+                    parts.push("[" + toolchainPrompts[tc] + "]");
+                }
+
+                const subject = document
+                    .getElementById("txt-subject")
+                    .value.trim();
+                if (subject) {
+                    parts.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
+                }
+
+                const styleVal = document.getElementById("sel-style").value;
+                const style = lookup(styleOptions, styleVal);
+                if (style) parts.push(style.prompt);
+
+                if (state.traits.length) {
+                    parts.push(state.traits.join(", ") + ".");
+                }
+
+                const aspectVal = document.getElementById("sel-aspect").value;
+                const aspect = lookup(aspectOptions, aspectVal);
+                if (aspect) parts.push(aspect.prompt);
+
+                const varVal = document.getElementById("sel-variations").value;
+                if (varVal === "variations") {
+                    parts.push("Coherent set of 4 variations sharing style and subject.");
+                } else if (varVal === "sheet") {
+                    parts.push("Character/asset sheet — multiple views (front, 3-quarter, side, back) with consistent style.");
+                }
+
+                const extra = document.getElementById("txt-extra").value.trim();
+                if (extra) parts.push(extra);
+
+                const hasAny =
+                    tc || subject || styleVal || state.traits.length ||
+                    aspectVal || varVal || extra ||
+                    document.getElementById("txt-negative").value.trim();
+                if (!hasAny) {
+                    document.getElementById("prompt-box").value = "";
+                    return;
+                }
+
+                parts.push(
+                    "Output as a single self-contained generation prompt ready to paste into the target platform. Adhere to its native syntax (parameters, weighting, negative prompts) and front-load the most important visual cues.",
+                );
+
+                let main = parts.join(" ");
+
+                const negative = document
+                    .getElementById("txt-negative")
+                    .value.trim();
+                if (negative) {
+                    if (tc === "sdxl" || tc === "flux") {
+                        main += "\n\nNegative prompt: " + negative;
+                    } else {
+                        main += "\n\nAvoid: " + negative;
+                    }
+                }
+
+                document.getElementById("prompt-box").value = main;
+            }
+
+            function copyPrompt() {
+                navigator.clipboard
+                    .writeText(document.getElementById("prompt-box").value)
+                    .then(() => {
+                        const msg = document.getElementById("toast");
+                        msg.classList.add("show");
+                        setTimeout(() => msg.classList.remove("show"), 1500);
+                    });
+            }
+
+            function resetAll() {
+                document.getElementById("sel-toolchain").value = "";
+                document.getElementById("sel-style").value = "";
+                document.getElementById("txt-subject").value = "";
+                document.getElementById("sel-aspect").value = "";
+                document.getElementById("sel-variations").value = "";
+                document.getElementById("txt-negative").value = "";
+                document.getElementById("txt-extra").value = "";
+                state.traits = [];
+                document
+                    .querySelectorAll("#trait-checks input:checked")
+                    .forEach((c) => (c.checked = false));
+                document.getElementById("prompt-box").value = "";
+            }
+
+            init();
+        </script>
+    </body>
+</html>
