@@ -663,12 +663,6 @@
                     "Lua-based 2D game framework: love.load/update/draw lifecycle, fast iteration, cross-platform",
                 "Godot/GDScript":
                     "Free open-source game engine: scene tree composition, GDScript (Python-like) or C#, 2D/3D, cross-platform",
-                "Image Gen":
-                    "Image generation: photo and illustration prompts with camera angle, lens focal length, lighting, composition terminology. For Midjourney, DALL-E, SDXL, Flux, Nano Banana, Ideogram, Firefly, Leonardo",
-                "Video Gen":
-                    "Video generation: cinematic prompts with camera moves (dolly, crane, whip pan), shot types, aspect ratios. For Higgsfield, Runway, Sora, Kling, Pika, Luma, Hailuo, Veo",
-                "3D Mesh Gen":
-                    "3D mesh generation: PBR-ready assets with topology, UV layout, texture maps, engine-export conventions. For Meshy.ai, Tripo, Rodin, TRELLIS, Hunyuan3D, Stable Fast 3D",
             };
 
             const qualityTips = {
@@ -779,44 +773,6 @@
                     "Google C++ style: 2-space indent, snake_case functions, no exceptions. Dir: {project}/, {project}/internal/, tests/",
                 "misra-c":
                     "MISRA C: safety-critical embedded, restricted language subset. Dir: src/, include/, tests/, misra_config.txt, no dynamic memory",
-                "img-photoreal":
-                    "Photorealistic — accurate lighting, anatomy, surface texture, no stylization. Camera and lens treated as physical optics",
-                "img-cinematic":
-                    "Cinematic — anamorphic ratio, film grain, color grading (teal/orange, bleach bypass), motion-picture lighting",
-                "img-illustration":
-                    "Illustration — hand-drawn linework, painterly color, deliberate composition over realism",
-                "img-concept-art":
-                    "Concept art — moody atmosphere, narrative framing, gestural brushwork (a la Sparth, Craig Mullins)",
-                "img-anime":
-                    "Anime/manga — cel-shaded color, clean linework, expressive eyes, dynamic action poses",
-                "img-3d-render":
-                    "3D-render look — PBR shading, ray-traced reflections, ambient occlusion (Octane, Redshift, Unreal aesthetic)",
-                "img-product":
-                    "Product photo — seamless background, softbox key + rim light, deep sharpness, commercial polish",
-                "vid-cinematic":
-                    "Cinematic 24fps — film motion blur, anamorphic 2.39:1, deliberate camera choreography, color graded",
-                "vid-documentary":
-                    "Documentary — handheld realism, natural lighting, observational framing, minimal post",
-                "vid-commercial":
-                    "Commercial — punchy cuts, hero product framing, controlled studio lighting, polished color",
-                "vid-music-video":
-                    "Music video — beat-synced motion, stylized color, dynamic camera moves, surreal transitions",
-                "vid-social-vertical":
-                    "Vertical 9:16 social format — full-frame subject, fast hook, captions-aware framing",
-                "vid-animation-3d":
-                    "3D animated — rendered geometry, physically based materials, exaggerated motion arcs",
-                "mesh-pbr":
-                    "PBR-ready — base color, normal (tangent), roughness, metallic, AO maps; sRGB vs linear handled",
-                "mesh-game-ready":
-                    "Game-ready — quad topology, clean non-overlapping UVs, single material, polycount-budget aware, LOD-friendly",
-                "mesh-low-poly":
-                    "Low-poly stylized — flat-shaded faces, exaggerated forms, baked vertex color, no smoothing groups",
-                "mesh-high-poly":
-                    "High-poly sculpt — millions of polygons, fine surface detail, for normal-map baking to game mesh",
-                "mesh-photogrammetry":
-                    "Photogrammetry style — scanned realism, dense triangulation, baked albedo from photo reference",
-                "mesh-printable":
-                    "3D-print-ready — manifold solid, no inverted normals, no internal geometry, watertight mesh",
             };
 
             const traitTips = {
@@ -1061,228 +1017,6 @@
                     "Uses DI framework (Hilt/Dagger for Android, Spring for Java) — constructor injection, scoped lifetimes",
                 "Gradle build":
                     "Includes properly structured build.gradle with dependencies, flavors, and build types",
-                "Low angle":
-                    "Camera below subject looking up — makes subject feel powerful, dominant, heroic",
-                "High angle":
-                    "Camera above subject looking down — diminishes subject, suggests vulnerability or surveillance",
-                "Eye-level":
-                    "Camera at subject's eye line — neutral conversational, viewer-as-equal",
-                "Dutch angle":
-                    "Camera tilted off-axis — creates unease, disorientation, instability",
-                "Bird's-eye view":
-                    "Top-down camera looking straight down — abstract, map-like, omniscient",
-                "Worm's-eye view":
-                    "Extreme low angle looking straight up — towering, monumental scale",
-                "Over-the-shoulder":
-                    "Frame includes back of one subject viewing another — conversational coverage",
-                "POV":
-                    "Camera placed at character's eyes — first-person subjective view",
-                "Extreme close-up":
-                    "Tight frame on detail (eye, lips, object) — intensifies focus, isolates emotion",
-                "Close-up":
-                    "Subject's head/shoulders fill the frame — emotional intimacy",
-                "Medium shot":
-                    "Subject framed waist-up — standard conversational coverage",
-                "Wide shot":
-                    "Subject within full environment — establishes context and scale",
-                "Establishing shot":
-                    "Opening wide that sets location, time of day, mood",
-                "Macro":
-                    "Extreme close-up of small details with shallow DOF — texture/surface emphasis",
-                "Long lens compression":
-                    "Telephoto flattens depth and pulls background visually closer",
-                "14mm fisheye":
-                    "Ultra-wide with strong barrel distortion — immersive, exaggerated perspective",
-                "24mm wide":
-                    "Wide-angle lens — landscapes, environments, expanded perspective",
-                "35mm":
-                    "Slightly wide — natural documentary feel, environmental portraits",
-                "50mm normal":
-                    "Standard 'normal' focal length — closest to human eye perspective",
-                "85mm portrait":
-                    "Short telephoto — classic portrait lens, flattering compression and bokeh",
-                "135mm telephoto":
-                    "Long focal length — strong subject isolation, compressed background",
-                "Anamorphic 2.39:1":
-                    "Anamorphic lens character — oval bokeh, horizontal lens flares, cinematic widescreen",
-                "Three-point lighting":
-                    "Key + fill + back light — standard studio setup, controlled and dimensional",
-                "Rim lighting":
-                    "Light from behind/side outlining subject edge — separates subject from background",
-                "Golden hour":
-                    "Warm low-angle sun shortly after sunrise / before sunset — soft, long shadows, orange-gold tone",
-                "Blue hour":
-                    "Twilight just before sunrise / after sunset — cool deep blues, soft ambient",
-                "Chiaroscuro":
-                    "Strong contrast between light and dark — dramatic painterly (Caravaggio, Rembrandt)",
-                "Soft diffused":
-                    "Large diffused light source — gentle shadows, flattering, fashion/beauty",
-                "Hard directional":
-                    "Small bright source — sharp shadows, high contrast, dramatic",
-                "Volumetric god rays":
-                    "Visible light shafts through atmosphere — dust, fog, or particulate scattering",
-                "Neon practicals":
-                    "Visible neon/LED signs as in-frame light sources — cyberpunk, urban night",
-                "Backlit silhouette":
-                    "Subject darkened against bright background — shape-driven composition",
-                "Rule of thirds":
-                    "Place subject on intersection of thirds-grid lines — classic balanced composition",
-                "Centered symmetry":
-                    "Subject dead-center with symmetrical framing — formal, iconic (Wes Anderson, Kubrick)",
-                "Leading lines":
-                    "Use linear elements (roads, walls) to draw the eye toward the subject",
-                "Negative space":
-                    "Large empty area around subject — emphasizes scale, isolation, minimalism",
-                "Foreground framing":
-                    "Place object in foreground that frames the subject (doorway, branches)",
-                "Shallow depth of field":
-                    "Narrow plane of focus — soft blurred background, isolates subject",
-                "Deep focus":
-                    "Everything from foreground to background sharp — environmental clarity",
-                "Bokeh background":
-                    "Aesthetic out-of-focus blur — circular highlights from wide aperture",
-                "Film grain":
-                    "Visible grain texture — analog film aesthetic",
-                "Color graded":
-                    "Specific post-color treatment — teal/orange, bleach bypass, day-for-night, etc",
-                "High dynamic range":
-                    "Extended tonal range from deep shadow to bright highlight",
-                "Monochrome":
-                    "Single-color or black & white palette",
-                "Pastel palette":
-                    "Soft, low-saturation colors — dreamy, gentle",
-                "High contrast":
-                    "Pronounced separation between light and dark tones",
-                "Punch in":
-                    "Quick zoom or cut closer mid-shot — emphasis, energy boost",
-                "Punch out":
-                    "Quick zoom-out reveal — opens scope, reveal-of-context",
-                "Dolly in":
-                    "Camera physically moves toward subject — increases intimacy",
-                "Dolly out":
-                    "Camera physically moves away from subject — opens context, emotional finale",
-                "Truck left":
-                    "Camera moves sideways to the left while pointing forward — parallax",
-                "Truck right":
-                    "Camera moves sideways to the right while pointing forward — parallax",
-                "Trolley out":
-                    "Camera retreats on dolly/tracks as subject continues — spatial reveal",
-                "Pan":
-                    "Camera rotates horizontally from a fixed point",
-                "Tilt":
-                    "Camera rotates vertically from a fixed point",
-                "Crane up":
-                    "Boom-mounted camera rises — sweeping reveal",
-                "Crane down":
-                    "Boom-mounted camera descends — focused emphasis",
-                "Whip pan":
-                    "Extremely fast pan — motion blur transition between scenes",
-                "Tracking shot":
-                    "Camera follows a moving subject in parallel",
-                "Push pull (vertigo)":
-                    "Dolly forward while zooming out (or reverse) — Hitchcock zoom, unsettling",
-                "Orbit":
-                    "Camera circles subject — 360-degree showcase",
-                "Steadicam":
-                    "Smooth handheld float — operator with stabilizer rig",
-                "Handheld":
-                    "Untreated handheld — kinetic, naturalistic shake",
-                "Static lockdown":
-                    "Camera fixed on tripod — composition-first, motion within frame",
-                "Gimbal float":
-                    "Modern stabilized handheld — smooth but mobile",
-                "Master shot":
-                    "Wide that covers entire scene action — assembly anchor",
-                "Insert":
-                    "Tight cutaway to detail (clock, hand, prop)",
-                "Cutaway":
-                    "Brief shot away from main action for context or rhythm",
-                "Reaction shot":
-                    "Cut to subject's response to off-screen action",
-                "POV shot":
-                    "Subjective camera as character's eyes",
-                "Two-shot":
-                    "Frame contains two subjects — dialog coverage",
-                "Slow motion 120fps":
-                    "Capture at high frame rate, play back slower — magnifies micro-moments",
-                "Time-lapse":
-                    "Long interval captured, played fast — long passages compressed",
-                "Hyperlapse":
-                    "Time-lapse with camera moving through space — accelerated travel",
-                "Speed ramp":
-                    "Variable playback speed within a single shot — dynamic emphasis",
-                "16:9 widescreen":
-                    "Standard HD/TV aspect ratio",
-                "21:9 ultrawide":
-                    "Cinematic ultra-wide — anamorphic feel",
-                "9:16 vertical":
-                    "TikTok/Reels/Shorts vertical aspect",
-                "1:1 square":
-                    "Instagram feed square aspect",
-                "4:3 academy":
-                    "Classic pre-widescreen aspect — vintage/retro feel",
-                "Soft natural":
-                    "Window light, overcast — gentle realistic illumination",
-                "Quad topology":
-                    "All polygons are 4-sided quads — required for sub-D and clean deformation",
-                "Triangulated":
-                    "All faces are triangles — engine-ready but harder to edit/subdivide",
-                "All-quad sub-D ready":
-                    "Pure quad mesh ready for subdivision-surface smoothing",
-                "Retopologized":
-                    "Hand-built low-poly mesh over a high-poly sculpt for clean deformation",
-                "Even edge flow":
-                    "Edges follow natural surface contours — clean animation deformation",
-                "Pole-free":
-                    "No 5+ edges meeting at a vertex — avoids pinching under subdivision",
-                "UV unwrapped":
-                    "Mesh flattened to 2D UV layout for texture mapping",
-                "Non-overlapping UVs":
-                    "Each surface has unique UV space — required for baking maps",
-                "Single UDIM":
-                    "All UVs in 0–1 space — standard for game engines",
-                "UV checker tested":
-                    "Verified with checker texture for even texel density and minimal distortion",
-                "Base color map":
-                    "Albedo/diffuse — surface color without lighting baked in",
-                "Normal map (tangent space)":
-                    "Per-pixel surface direction — fakes high-poly detail on low-poly mesh",
-                "Roughness map":
-                    "Surface roughness 0–1 — controls specular highlight sharpness",
-                "Metallic map":
-                    "Metallic vs dielectric mask — PBR metallic workflow",
-                "Ambient occlusion baked":
-                    "Pre-computed contact shadow — adds grounded depth in crevices",
-                "Displacement map":
-                    "True geometry offset based on height map — for renders/sub-D",
-                "Emissive map":
-                    "Self-illuminated areas — lights, screens, glowing parts",
-                "Height map":
-                    "Greyscale height data for parallax or displacement",
-                "Subsurface scattering":
-                    "Light penetrates surface (skin, wax, jade) — soft translucent quality",
-                "Hard surface":
-                    "Mechanical/manufactured forms — bevels, panel lines, clean edges",
-                "Organic sculpt":
-                    "Natural forms — anatomy, creatures, terrain",
-                "Tileable surface":
-                    "Texture/mesh tiles seamlessly for repeating coverage",
-                "Sharp edge bevels":
-                    "Small chamfers on hard edges — required for proper specular pickup",
-                "Real-time engine ready":
-                    "Optimized for Unity/Unreal — under polycount budget, baked maps",
-                "VR-optimized":
-                    "Aggressive poly budget for VR frame-rate targets (90+ fps)",
-                "Mobile poly budget":
-                    "Stripped further for mobile GPU constraints",
-                "Cinematic high-detail":
-                    "Render-quality detail — millions of polys, ray-traced subsurface",
-                "Riggable (clean topology)":
-                    "Edge loops at deformation areas (elbows, knees, mouth) for animation",
-                "T-pose neutral":
-                    "Character arms straight out — standard for skinning",
-                "A-pose neutral":
-                    "Arms angled down at ~45° — more natural shoulder rest state",
             };
 
             const errorHandlingPrompts = {
@@ -1351,47 +1085,6 @@
                 { value: "qwen-code", label: "Qwen Code / DeepSeek Coder", group: "LLM Coding Agents" },
                 { value: "v0", label: "v0.dev (Vercel)", group: "LLM Coding Agents" },
                 { value: "bolt", label: "Bolt.new / Lovable", group: "LLM Coding Agents" },
-                { value: "midjourney", label: "Midjourney v6", group: "Image Generation" },
-                { value: "dalle3", label: "DALL-E 3", group: "Image Generation" },
-                { value: "sdxl", label: "Stable Diffusion XL", group: "Image Generation" },
-                { value: "flux", label: "Flux.1", group: "Image Generation" },
-                { value: "nanobanana", label: "Nano Banana (Gemini)", group: "Image Generation" },
-                { value: "ideogram", label: "Ideogram", group: "Image Generation" },
-                { value: "firefly", label: "Adobe Firefly", group: "Image Generation" },
-                { value: "leonardo", label: "Leonardo.ai", group: "Image Generation" },
-                { value: "recraft", label: "Recraft V3", group: "Image Generation" },
-                { value: "higgsfield", label: "Higgsfield.ai", group: "Video Generation" },
-                { value: "runway-gen3", label: "Runway Gen-3", group: "Video Generation" },
-                { value: "sora", label: "OpenAI Sora", group: "Video Generation" },
-                { value: "kling", label: "Kling AI", group: "Video Generation" },
-                { value: "pika", label: "Pika 2.0", group: "Video Generation" },
-                { value: "luma", label: "Luma Dream Machine", group: "Video Generation" },
-                { value: "hailuo", label: "Hailuo (MiniMax)", group: "Video Generation" },
-                { value: "veo", label: "Google Veo", group: "Video Generation" },
-                { value: "meshy", label: "Meshy.ai", group: "3D Mesh Generation" },
-                { value: "tripo", label: "Tripo3D", group: "3D Mesh Generation" },
-                { value: "rodin", label: "Rodin (Hyper3D)", group: "3D Mesh Generation" },
-                { value: "trellis", label: "Microsoft TRELLIS", group: "3D Mesh Generation" },
-                { value: "hunyuan3d", label: "Tencent Hunyuan3D", group: "3D Mesh Generation" },
-                { value: "stable-fast-3d", label: "Stable Fast 3D", group: "3D Mesh Generation" },
-                { value: "instantmesh", label: "InstantMesh", group: "3D Mesh Generation" },
-            ];
-
-            const assetToolchainKinds = {
-                midjourney: "image", dalle3: "image", sdxl: "image", flux: "image",
-                nanobanana: "image", ideogram: "image", firefly: "image", leonardo: "image", recraft: "image",
-                higgsfield: "video", "runway-gen3": "video", sora: "video", kling: "video",
-                pika: "video", luma: "video", hailuo: "video", veo: "video",
-                meshy: "3d", tripo: "3d", rodin: "3d", trellis: "3d",
-                hunyuan3d: "3d", "stable-fast-3d": "3d", instantmesh: "3d",
-            };
-
-            const assetPresetNames = new Set(["Image Gen", "Video Gen", "3D Mesh Gen"]);
-
-            const codeOnlyStepIds = [
-                "plan-modifiers", "dimensionality", "existing-context", "structure",
-                "tooling", "input", "errorhandling", "reasoning", "deliverables",
-                "acceptance", "secondpass",
             ];
 
             const toolchainPrompts = {
@@ -1421,54 +1114,6 @@
                     "Target v0. Produce React/Next.js components compatible with shadcn/ui and Tailwind. Output should render in v0's preview — keep client/server boundaries explicit.",
                 bolt:
                     "Target Bolt/Lovable web-app builder. Self-contained project files, Vite-ready, no missing imports. Prefer a single-screen MVP unless multi-route is required.",
-                midjourney:
-                    "Target Midjourney v6. Terse comma-delimited phrasing. Suffix parameters: --ar <w:h> --stylize 0-1000 --chaos 0-100 --seed <n> --weird 0-3000 --v 6. Front-load the most important visual cues.",
-                dalle3:
-                    "Target DALL-E 3. Natural-language descriptive sentences — the GPT-4 rewriter expects coherent paragraphs. No parameter syntax. State subject, style, camera, and lighting explicitly.",
-                sdxl:
-                    "Target Stable Diffusion XL. Token-weighted prompt with parenthetical weights like (subject:1.3). Provide a separate negative prompt for exclusions. Suggest sampler (DPM++ 2M Karras), CFG 4-8, 25-40 steps.",
-                flux:
-                    "Target Flux.1 (Schnell / Dev / Pro). Hybrid prose + tag style. Strong prompt adherence — describe explicitly rather than relying on aesthetic tokens.",
-                nanobanana:
-                    "Target Nano Banana (Google Gemini 2.5 Flash Image). Descriptive natural language. Reference images supported. Strong character consistency across edits — describe the character once, then specify the edit.",
-                ideogram:
-                    "Target Ideogram. Wrap any in-image text in double quotes — Ideogram leads the field in legible typography. Specify font feel (serif, sans, script) and color.",
-                firefly:
-                    "Target Adobe Firefly. Commercially safe model (licensed training). Use style references when available. Pair with Photoshop generative fill/expand workflow.",
-                leonardo:
-                    "Target Leonardo.ai. Specify model (Phoenix, Lightning XL, Vision XL) and preset style. Optionally request Alchemy refinement and image-to-image control mode.",
-                recraft:
-                    "Target Recraft V3. Specify vector vs raster output. Use brand-style presets. Strong text rendering for design and logo work.",
-                higgsfield:
-                    "Target Higgsfield.ai. Phrase camera moves using the platform's named cinematic presets: dolly in/out, orbit, crane, DOF rack, whip pan. Describe the subject, then chain the camera move.",
-                "runway-gen3":
-                    "Target Runway Gen-3 Alpha / Turbo. Text-to-video or image-to-video. State explicit camera direction (push in, pull out, pan left). Mention motion brush regions if applicable.",
-                sora:
-                    "Target OpenAI Sora. Rich natural language with spatial and temporal detail. Describe the world, the subject's action across time, and scene continuity. Long-form coherent.",
-                kling:
-                    "Target Kling AI. Realistic motion physics. Specify a clear first-frame state and the motion that follows. Image-to-video is the strength — describe the desired motion of the source image.",
-                pika:
-                    "Target Pika 2.0. Short stylized clips. Invoke Pikaffects by name (explode, melt, inflate, deflate, squish). Lipsync supported — declare it explicitly.",
-                luma:
-                    "Target Luma Dream Machine. Use keyframe-based camera path direction. Photorealistic output. Best with image-to-video and clear camera motion description.",
-                hailuo:
-                    "Target Hailuo (MiniMax video-01). Strong character consistency and expressive motion. Describe character anchors first, then motion and scene.",
-                veo:
-                    "Target Google Veo / Veo 2. Fluent cinematic terminology (focal lengths, lens names, lighting). Long-form coherence at 1080p+.",
-                meshy:
-                    "Target Meshy.ai. Text-to-3D or image-to-3D. Request texture refine pass. PBR map output (base color, normal, roughness, metallic, AO). Optional auto-retopology and auto-rig.",
-                tripo:
-                    "Target Tripo3D / TripoSR. Fast text-to-3D. Request quad retopology mode and PBR materials. Image-to-3D supports single or multi-view input.",
-                rodin:
-                    "Target Rodin / Hyper3D. High-fidelity 3D from image references. Supply multi-view inputs (front, side, back) for best geometry accuracy.",
-                trellis:
-                    "Target Microsoft TRELLIS. Image-to-3D with structured latent. Outputs mesh + 3D Gaussian + radiance field — request the format you need.",
-                hunyuan3d:
-                    "Target Hunyuan3D (Tencent). Open-source weights. Text or image to textured mesh. State target poly budget if known.",
-                "stable-fast-3d":
-                    "Target Stable Fast 3D (Stability AI). Seconds-fast image-to-3D. UV-unwrapped mesh output ready for engine import.",
-                instantmesh:
-                    "Target InstantMesh. Feed-forward sparse-view image-to-mesh reconstruction. Provide one or more reference views.",
             };
 
             // ── Application dimensionality ──
@@ -1963,246 +1608,6 @@
                         "Static analysis clean",
                     ],
                 },
-                "Image Gen": {
-                    conventions: [
-                        {
-                            value: "img-photoreal",
-                            label: "Photorealistic",
-                            prompt: "Render in photorealistic style — physically accurate lighting, anatomy, surface detail. Treat camera and lens as physical optics.",
-                        },
-                        {
-                            value: "img-cinematic",
-                            label: "Cinematic",
-                            prompt: "Cinematic style — anamorphic 2.39:1 framing, film grain, color graded, motion-picture lighting and composition.",
-                        },
-                        {
-                            value: "img-illustration",
-                            label: "Illustration",
-                            prompt: "Illustration style — hand-drawn linework, painterly color, deliberate composition over realism.",
-                        },
-                        {
-                            value: "img-concept-art",
-                            label: "Concept art",
-                            prompt: "Concept art style — moody lighting, atmospheric perspective, gestural brushwork, narrative composition.",
-                        },
-                        {
-                            value: "img-anime",
-                            label: "Anime/manga",
-                            prompt: "Anime/manga style — cel-shaded color blocks, clean linework, expressive eyes, dynamic poses.",
-                        },
-                        {
-                            value: "img-3d-render",
-                            label: "3D render look",
-                            prompt: "3D render style — physically-based shading, ray-traced reflections, ambient occlusion (Octane / Redshift / Unreal aesthetic).",
-                        },
-                        {
-                            value: "img-product",
-                            label: "Product photo",
-                            prompt: "Product photography style — seamless background, softbox key + rim light, sharp focus across subject, commercial polish.",
-                        },
-                    ],
-                    traits: [
-                        "Low angle",
-                        "High angle",
-                        "Eye-level",
-                        "Dutch angle",
-                        "Bird's-eye view",
-                        "Worm's-eye view",
-                        "Over-the-shoulder",
-                        "POV",
-                        "Extreme close-up",
-                        "Close-up",
-                        "Medium shot",
-                        "Wide shot",
-                        "Establishing shot",
-                        "Macro",
-                        "Long lens compression",
-                        "14mm fisheye",
-                        "24mm wide",
-                        "35mm",
-                        "50mm normal",
-                        "85mm portrait",
-                        "135mm telephoto",
-                        "Anamorphic 2.39:1",
-                        "Three-point lighting",
-                        "Rim lighting",
-                        "Golden hour",
-                        "Blue hour",
-                        "Chiaroscuro",
-                        "Soft diffused",
-                        "Hard directional",
-                        "Volumetric god rays",
-                        "Neon practicals",
-                        "Backlit silhouette",
-                        "Rule of thirds",
-                        "Centered symmetry",
-                        "Leading lines",
-                        "Negative space",
-                        "Foreground framing",
-                        "Shallow depth of field",
-                        "Deep focus",
-                        "Bokeh background",
-                        "Film grain",
-                        "Color graded",
-                        "High dynamic range",
-                        "Monochrome",
-                        "Pastel palette",
-                        "High contrast",
-                    ],
-                },
-                "Video Gen": {
-                    conventions: [
-                        {
-                            value: "vid-cinematic",
-                            label: "Cinematic 24fps",
-                            prompt: "Cinematic 24fps style — film-style motion blur, anamorphic framing, deliberate camera choreography, color graded look.",
-                        },
-                        {
-                            value: "vid-documentary",
-                            label: "Documentary",
-                            prompt: "Documentary style — handheld realism, natural lighting, observational framing, minimal post-processing.",
-                        },
-                        {
-                            value: "vid-commercial",
-                            label: "Commercial",
-                            prompt: "Commercial style — punchy cuts, hero subject framing, controlled studio lighting, polished color grade.",
-                        },
-                        {
-                            value: "vid-music-video",
-                            label: "Music video",
-                            prompt: "Music video style — beat-synced motion, stylized color, dynamic camera moves, surreal transitions.",
-                        },
-                        {
-                            value: "vid-social-vertical",
-                            label: "Social vertical (9:16)",
-                            prompt: "Vertical 9:16 social format — full-frame subject, fast hook within first second, captions-aware framing.",
-                        },
-                        {
-                            value: "vid-animation-3d",
-                            label: "3D animation",
-                            prompt: "3D animated style — rendered geometry, physically based materials, exaggerated motion arcs and anticipation.",
-                        },
-                    ],
-                    traits: [
-                        "Punch in",
-                        "Punch out",
-                        "Dolly in",
-                        "Dolly out",
-                        "Truck left",
-                        "Truck right",
-                        "Trolley out",
-                        "Pan",
-                        "Tilt",
-                        "Crane up",
-                        "Crane down",
-                        "Whip pan",
-                        "Tracking shot",
-                        "Push pull (vertigo)",
-                        "Orbit",
-                        "Steadicam",
-                        "Handheld",
-                        "Static lockdown",
-                        "Gimbal float",
-                        "Master shot",
-                        "Insert",
-                        "Cutaway",
-                        "Reaction shot",
-                        "Establishing shot",
-                        "POV shot",
-                        "Two-shot",
-                        "Over-the-shoulder",
-                        "Slow motion 120fps",
-                        "Time-lapse",
-                        "Hyperlapse",
-                        "Speed ramp",
-                        "16:9 widescreen",
-                        "21:9 ultrawide",
-                        "9:16 vertical",
-                        "1:1 square",
-                        "4:3 academy",
-                        "Anamorphic 2.39:1",
-                        "Golden hour",
-                        "Blue hour",
-                        "Neon practicals",
-                        "Volumetric god rays",
-                        "High contrast",
-                        "Soft natural",
-                        "Film grain",
-                        "Color graded",
-                        "24mm wide",
-                        "35mm",
-                        "50mm normal",
-                        "85mm portrait",
-                        "Shallow depth of field",
-                        "Bokeh background",
-                    ],
-                },
-                "3D Mesh Gen": {
-                    conventions: [
-                        {
-                            value: "mesh-pbr",
-                            label: "PBR-ready",
-                            prompt: "Output PBR-ready — separate base color, normal (tangent space), roughness, metallic, AO maps. Handle sRGB vs linear correctly.",
-                        },
-                        {
-                            value: "mesh-game-ready",
-                            label: "Game-ready",
-                            prompt: "Game-ready asset — quad topology, clean non-overlapping UVs, single material slot, optimized triangle count, LOD-friendly silhouette.",
-                        },
-                        {
-                            value: "mesh-low-poly",
-                            label: "Low-poly stylized",
-                            prompt: "Low-poly stylized — flat-shaded faces, exaggerated forms, no smoothing groups, baked vertex color.",
-                        },
-                        {
-                            value: "mesh-high-poly",
-                            label: "High-poly sculpt",
-                            prompt: "High-poly sculpt — millions of polygons, fine surface detail, suitable for baking down to game-ready normal maps.",
-                        },
-                        {
-                            value: "mesh-photogrammetry",
-                            label: "Photogrammetry style",
-                            prompt: "Photogrammetry style — scanned realism, dense triangulation, baked albedo from photo reference.",
-                        },
-                        {
-                            value: "mesh-printable",
-                            label: "3D-print-ready",
-                            prompt: "3D-print-ready — manifold solid, consistent outward normals, no internal geometry, fully watertight mesh.",
-                        },
-                    ],
-                    traits: [
-                        "Quad topology",
-                        "Triangulated",
-                        "All-quad sub-D ready",
-                        "Retopologized",
-                        "Even edge flow",
-                        "Pole-free",
-                        "UV unwrapped",
-                        "Non-overlapping UVs",
-                        "Single UDIM",
-                        "UV checker tested",
-                        "Base color map",
-                        "Normal map (tangent space)",
-                        "Roughness map",
-                        "Metallic map",
-                        "Ambient occlusion baked",
-                        "Displacement map",
-                        "Emissive map",
-                        "Height map",
-                        "Subsurface scattering",
-                        "Hard surface",
-                        "Organic sculpt",
-                        "Tileable surface",
-                        "Sharp edge bevels",
-                        "Real-time engine ready",
-                        "VR-optimized",
-                        "Mobile poly budget",
-                        "Cinematic high-detail",
-                        "Riggable (clean topology)",
-                        "T-pose neutral",
-                        "A-pose neutral",
-                    ],
-                },
             };
 
             // ── Quality options ──
@@ -2421,16 +1826,6 @@
                     "a test suite",
                     "a build pipeline",
                 ],
-                Generate: [
-                    "an image",
-                    "a video clip",
-                    "a 3D mesh",
-                    "an animation",
-                    "a character",
-                    "an environment",
-                    "a prop",
-                    "a texture/material",
-                ],
             };
 
             const scopeOptions = {
@@ -2488,114 +1883,6 @@
                     {
                         value: "ecs",
                         prompt: "Entity-component-system architecture.",
-                    },
-                ],
-                "an image": [
-                    {
-                        value: "single-image",
-                        prompt: "Single composition.",
-                    },
-                    {
-                        value: "image-variations",
-                        prompt: "Coherent set of 4 variations sharing style and subject.",
-                    },
-                    {
-                        value: "image-sheet",
-                        prompt: "Character/asset sheet — multiple views (front, 3-quarter, side, back) with consistent style.",
-                    },
-                ],
-                "a video clip": [
-                    {
-                        value: "short-clip",
-                        prompt: "Short clip — 3 to 5 seconds, single shot.",
-                    },
-                    {
-                        value: "standard-clip",
-                        prompt: "Standard clip — 5 to 10 seconds, allow one camera move.",
-                    },
-                    {
-                        value: "extended-clip",
-                        prompt: "Extended clip — 10 to 30 seconds, scene with cuts or continuous coverage.",
-                    },
-                    {
-                        value: "loop-clip",
-                        prompt: "Seamless loop — start frame matches end frame for clean repetition.",
-                    },
-                ],
-                "a 3D mesh": [
-                    {
-                        value: "single-asset",
-                        prompt: "Single hero asset — high fidelity, one mesh.",
-                    },
-                    {
-                        value: "asset-set",
-                        prompt: "Asset set — multiple related meshes sharing style and scale.",
-                    },
-                    {
-                        value: "modular-kit",
-                        prompt: "Modular kit — interlocking tiles/pieces with consistent grid snap.",
-                    },
-                ],
-                "an animation": [
-                    {
-                        value: "loop-anim",
-                        prompt: "Looping animation — seamless cycle (idle, walk, run).",
-                    },
-                    {
-                        value: "one-shot-anim",
-                        prompt: "One-shot animation — single non-repeating action (jump, attack, gesture).",
-                    },
-                ],
-                "a character": [
-                    {
-                        value: "char-bust",
-                        prompt: "Bust / portrait — head and shoulders only.",
-                    },
-                    {
-                        value: "char-full-body",
-                        prompt: "Full-body — head to toe, rigging-ready neutral pose.",
-                    },
-                    {
-                        value: "char-turntable",
-                        prompt: "Turntable views — front, 3-quarter, side, back with consistent style.",
-                    },
-                ],
-                "an environment": [
-                    {
-                        value: "env-establishing",
-                        prompt: "Establishing wide — full environment context.",
-                    },
-                    {
-                        value: "env-vignette",
-                        prompt: "Detailed vignette — focused area within a larger world.",
-                    },
-                    {
-                        value: "env-modular",
-                        prompt: "Modular environment — tileable pieces for level assembly.",
-                    },
-                ],
-                "a prop": [
-                    {
-                        value: "prop-hero",
-                        prompt: "Hero prop — high detail, screen-time-ready.",
-                    },
-                    {
-                        value: "prop-set-dressing",
-                        prompt: "Set-dressing prop — lower fidelity, repeats acceptable.",
-                    },
-                ],
-                "a texture/material": [
-                    {
-                        value: "tex-tileable",
-                        prompt: "Tileable material — seamless on all 4 edges, full PBR map set.",
-                    },
-                    {
-                        value: "tex-trim-sheet",
-                        prompt: "Trim sheet — multiple texture strips in one sheet for UV mapping.",
-                    },
-                    {
-                        value: "tex-decal",
-                        prompt: "Decal — alpha-bordered overlay for surface detail.",
                     },
                 ],
                 _default: [
@@ -2832,17 +2119,6 @@
                         prompt: "Use Unity shader layout: Assets/Shaders/ (*.shader, *.hlsl), Assets/Shaders/Includes/ (shared .hlsl), Assets/Shaders/SubGraphs/ (Shader Graph sub-graphs), Assets/Shaders/CustomFunctions/.",
                     },
                 ],
-                "Image Gen": [],
-                "Video Gen": [],
-                "3D Mesh Gen": [],
-                "an image": [],
-                "a video clip": [],
-                "a 3D mesh": [],
-                "an animation": [],
-                "a character": [],
-                "an environment": [],
-                "a prop": [],
-                "a texture/material": [],
                 _default: [
                     {
                         value: "flat",
@@ -3354,174 +2630,6 @@
                         label: "Default Godot Physics",
                         prompt: "Use Godot's default built-in physics server.",
                         tip: "Godot's built-in physics: PhysicsServer2D/3D, RigidBody, CharacterBody, Areas",
-                    },
-                ],
-                "Image Gen": [
-                    {
-                        value: "midjourney",
-                        label: "Midjourney v6",
-                        prompt: "Optimize for Midjourney v6 — terse comma-delimited phrasing, suffix parameters --ar (aspect), --stylize 0–1000, --chaos 0–100, --seed, --weird, --v 6.",
-                        tip: "Midjourney v6 syntax: subject, style, lighting, camera, --ar 16:9 --stylize 750 --chaos 20",
-                    },
-                    {
-                        value: "dalle3",
-                        label: "DALL-E 3",
-                        prompt: "Optimize for DALL-E 3 — natural-language descriptive sentences. GPT-4 rewriter expects coherent paragraphs, no parameter syntax.",
-                        tip: "DALL-E 3: full descriptive sentences, ChatGPT auto-expands prompts, no parameter syntax",
-                    },
-                    {
-                        value: "sdxl",
-                        label: "Stable Diffusion XL",
-                        prompt: "Optimize for Stable Diffusion XL — token-weighted prompts (subject:1.3), separate negative prompt for exclusions, mention sampler / CFG / steps.",
-                        tip: "SDXL: weighted tokens like (cat:1.3), negative prompt, sampler (DPM++ 2M), CFG 4–8, 25–40 steps",
-                    },
-                    {
-                        value: "flux",
-                        label: "Flux.1",
-                        prompt: "Optimize for Flux.1 (Schnell/Dev/Pro) — natural prose plus tag style; high prompt fidelity; less parameter tuning required.",
-                        tip: "Flux.1: hybrid prose+tag prompts, strong adherence, Schnell (fast) / Dev (balanced) / Pro (quality)",
-                    },
-                    {
-                        value: "nanobanana",
-                        label: "Nano Banana (Gemini)",
-                        prompt: "Optimize for Nano Banana (Google Gemini image gen) — descriptive natural language, multi-image reference input, strong character consistency across edits.",
-                        tip: "Nano Banana / Gemini 2.5 Flash Image: natural language, reference images, character-consistent edits",
-                    },
-                    {
-                        value: "ideogram",
-                        label: "Ideogram",
-                        prompt: "Optimize for Ideogram — exploit best-in-class typography rendering; wrap legible in-image text in quotes; ideal for posters, signs, logos.",
-                        tip: "Ideogram: best-in-class for in-image text rendering, posters, logos — wrap target text in quotes",
-                    },
-                    {
-                        value: "firefly",
-                        label: "Adobe Firefly",
-                        prompt: "Optimize for Adobe Firefly — commercially safe (licensed training data), strong style references, Photoshop/Illustrator integration.",
-                        tip: "Adobe Firefly: commercial-safe training, Photoshop generative fill/expand, style references",
-                    },
-                    {
-                        value: "leonardo",
-                        label: "Leonardo.ai",
-                        prompt: "Optimize for Leonardo.ai — specify model (Phoenix, Lightning XL, Vision XL), preset style, optional Alchemy refinement and control modes.",
-                        tip: "Leonardo.ai: multi-model platform, preset styles, Alchemy upscale/refine, image-to-image control modes",
-                    },
-                    {
-                        value: "recraft",
-                        label: "Recraft V3",
-                        prompt: "Optimize for Recraft V3 — vector/raster control, brand-style presets, strong text rendering.",
-                        tip: "Recraft V3: vector + raster output, brand style presets, strong text rendering for design",
-                    },
-                ],
-                "Video Gen": [
-                    {
-                        value: "higgsfield",
-                        label: "Higgsfield.ai",
-                        prompt: "Optimize for Higgsfield.ai — use platform's named cinematic camera-motion presets (dolly in/out, orbit, crane, DOF rack). Phrase camera moves explicitly.",
-                        tip: "Higgsfield.ai: cinematic camera-motion AI, named camera presets, motion-controllable generation",
-                    },
-                    {
-                        value: "runway-gen3",
-                        label: "Runway Gen-3",
-                        prompt: "Optimize for Runway Gen-3 Alpha — text-to-video and image-to-video, motion brush for region animation, explicit camera direction.",
-                        tip: "Runway Gen-3 Alpha / Turbo: text/image-to-video, motion brush, camera control sliders",
-                    },
-                    {
-                        value: "sora",
-                        label: "OpenAI Sora",
-                        prompt: "Optimize for OpenAI Sora — long-form coherent video; rich natural language with spatial and temporal detail; describe scene continuity.",
-                        tip: "Sora: long-form video, strong world simulation, narrative coherence, scene-to-scene continuity",
-                    },
-                    {
-                        value: "kling",
-                        label: "Kling AI",
-                        prompt: "Optimize for Kling AI — realistic physics and motion, image-to-video strength, supports up to 2 minutes.",
-                        tip: "Kling AI (Kuaishou): realistic motion physics, long-form, image-to-video",
-                    },
-                    {
-                        value: "pika",
-                        label: "Pika 2.0",
-                        prompt: "Optimize for Pika 2.0 — short stylized clips, invoke Pikaffects (explode, melt, inflate) by name, lipsync supported.",
-                        tip: "Pika 2.0: short stylized clips, Pikaffects motion presets, lipsync, scene ingredients",
-                    },
-                    {
-                        value: "luma",
-                        label: "Luma Dream Machine",
-                        prompt: "Optimize for Luma Dream Machine — image-to-video with keyframe-based camera path, photorealistic output.",
-                        tip: "Luma Dream Machine: keyframe camera path, photoreal output, image-to-video",
-                    },
-                    {
-                        value: "hailuo",
-                        label: "Hailuo (MiniMax)",
-                        prompt: "Optimize for Hailuo — strong character consistency, expressive motion, scene-to-scene continuity.",
-                        tip: "Hailuo (MiniMax video-01): character consistency, expressive motion, multi-shot continuity",
-                    },
-                    {
-                        value: "veo",
-                        label: "Google Veo",
-                        prompt: "Optimize for Google Veo / Veo 2 — long-form 1080p+, fluent cinematic terminology, strong prompt adherence.",
-                        tip: "Google Veo / Veo 2: 1080p+, cinematic terminology fluency, long-form coherence",
-                    },
-                ],
-                "3D Mesh Gen": [
-                    {
-                        value: "meshy",
-                        label: "Meshy.ai",
-                        prompt: "Optimize for Meshy.ai — text-to-3D or image-to-3D, request texture refine pass, PBR map output, optional auto-retopo and auto-rig.",
-                        tip: "Meshy.ai: text/image to 3D mesh, PBR texturing, auto-retopology, animation auto-rig",
-                    },
-                    {
-                        value: "tripo",
-                        label: "Tripo3D",
-                        prompt: "Optimize for Tripo3D / TripoSR — fast text-to-3D, request quad retopology mode and PBR materials.",
-                        tip: "Tripo3D: fast text-to-3D, quad retopo mode, PBR output, image-to-3D",
-                    },
-                    {
-                        value: "rodin",
-                        label: "Rodin (Hyper3D)",
-                        prompt: "Optimize for Rodin / Hyper3D — high-fidelity 3D from image references, supports multi-view input for accuracy.",
-                        tip: "Rodin (Hyper3D): high-detail multi-view 3D generation, image-conditioned, sharp geometry",
-                    },
-                    {
-                        value: "trellis",
-                        label: "Microsoft TRELLIS",
-                        prompt: "Optimize for Microsoft TRELLIS — image-to-3D with structured latent representation, mesh + 3D Gaussian + radiance field outputs.",
-                        tip: "TRELLIS: Microsoft image-to-3D, structured latent, mesh + Gaussian + radiance field outputs",
-                    },
-                    {
-                        value: "hunyuan3d",
-                        label: "Tencent Hunyuan3D",
-                        prompt: "Optimize for Hunyuan3D — open-source text or image to textured mesh.",
-                        tip: "Hunyuan3D (Tencent): open-source 3D gen, text/image to textured mesh",
-                    },
-                    {
-                        value: "stable-fast-3d",
-                        label: "Stable Fast 3D",
-                        prompt: "Optimize for Stable Fast 3D (Stability AI) — seconds-fast image-to-3D with UV-unwrapped mesh output.",
-                        tip: "Stable Fast 3D: seconds-fast image-to-3D, UV-unwrapped output, Stability AI",
-                    },
-                    {
-                        value: "instantmesh",
-                        label: "InstantMesh",
-                        prompt: "Optimize for InstantMesh — sparse-view feed-forward mesh generation from single image.",
-                        tip: "InstantMesh: feed-forward image-to-mesh, sparse multi-view reconstruction",
-                    },
-                    {
-                        value: "blender-export",
-                        label: "Blender export",
-                        prompt: "Output Blender-ready — FBX/OBJ/glTF, scale 1.0 meters, declare Y-up vs Z-up orientation explicitly.",
-                        tip: "Blender import: FBX/OBJ/glTF formats, axis orientation, scale, material assignment",
-                    },
-                    {
-                        value: "unity-export-3d",
-                        label: "Unity export",
-                        prompt: "Output Unity-ready — FBX or glTF, 1m scale, Y-up orientation, prefab-friendly pivot at base, lightmap UV channel.",
-                        tip: "Unity asset pipeline: FBX, 1m scale, Y-up, lightmap UV channel, prefab pivot at base",
-                    },
-                    {
-                        value: "unreal-export-3d",
-                        label: "Unreal export",
-                        prompt: "Output Unreal-ready — FBX, Z-up orientation, 1 unit = 1 cm, separate collision mesh (UCX_ prefix), smoothing groups exported.",
-                        tip: "Unreal asset pipeline: FBX, Z-up, 1cm units, UCX_ collision conventions, lightmap UVs",
                     },
                 ],
                 _default: [],
@@ -4508,7 +3616,6 @@
 
             // ── Prompt assembly ──
             function buildPrompt() {
-                applyModeVisibility();
                 const parts = [];
 
                 if (!state.action) {
@@ -4520,8 +3627,6 @@
 
                 const isPlan = state.action === "Plan";
                 const isOptimize = state.action === "Optimize";
-                const isGenerate = state.action === "Generate";
-                const isAsset = isAssetMode();
 
                 // Toolchain meta (prepended)
                 const toolchain =
@@ -4530,48 +3635,38 @@
                     parts.push("[" + toolchainPrompts[toolchain] + "]");
                 }
 
-                // Reasoning preface (code only)
-                if (!isAsset) {
-                    const reasoning =
-                        document.getElementById("sel-reasoning").value;
-                    if (reasoning && reasoningPrompts[reasoning]) {
-                        parts.push(reasoningPrompts[reasoning]);
-                    }
+                // Reasoning preface
+                const reasoning =
+                    document.getElementById("sel-reasoning").value;
+                if (reasoning && reasoningPrompts[reasoning]) {
+                    parts.push(reasoningPrompts[reasoning]);
                 }
 
                 // Opening
                 const desc = document
                     .getElementById("txt-describe")
                     .value.trim();
-                if (isAsset) {
-                    let opening = desc || "";
-                    if (opening && !/[.!?]$/.test(opening)) opening += ".";
-                    if (opening) parts.push(opening);
-                } else {
-                    let opening = isOptimize ? "Optimize for" : state.action;
-                    if (state.type) opening += " " + state.type;
-                    if (desc) {
-                        if (desc.match(/^that |^which |^for |^— /i)) {
-                            opening += " " + desc;
-                        } else {
-                            opening += " — " + desc;
-                        }
-                    }
-                    opening += ".";
-                    parts.push(opening);
-                }
-
-                // Dimensionality (code only)
-                if (!isAsset) {
-                    const dim =
-                        document.getElementById("sel-dimensionality").value;
-                    if (dim && dimensionalityPrompts[dim]) {
-                        parts.push(dimensionalityPrompts[dim]);
+                let opening = isOptimize ? "Optimize for" : state.action;
+                if (state.type) opening += " " + state.type;
+                if (desc) {
+                    if (desc.match(/^that |^which |^for |^— /i)) {
+                        opening += " " + desc;
+                    } else {
+                        opening += " — " + desc;
                     }
                 }
+                opening += ".";
+                parts.push(opening);
 
-                // Plan modifiers (code only — Plan action)
-                if (!isAsset && isPlan && state.planModifiers.length) {
+                // Dimensionality
+                const dim =
+                    document.getElementById("sel-dimensionality").value;
+                if (dim && dimensionalityPrompts[dim]) {
+                    parts.push(dimensionalityPrompts[dim]);
+                }
+
+                // Plan modifiers (Plan action only)
+                if (isPlan && state.planModifiers.length) {
                     for (const m of state.planModifiers) parts.push(m.prompt);
                 }
 
@@ -4583,38 +3678,36 @@
                     if (match) parts.push(match.prompt);
                 }
 
-                // Project structure (code only)
-                if (!isAsset) {
-                    const structVal =
-                        document.getElementById("sel-structure").value;
-                    if (structVal) {
-                        for (const key of Object.keys(structureOptions)) {
-                            const match = (structureOptions[key] || []).find(
-                                (o) => o.value === structVal,
-                            );
-                            if (match) {
-                                parts.push(match.prompt);
-                                break;
-                            }
+                // Project structure
+                const structVal =
+                    document.getElementById("sel-structure").value;
+                if (structVal) {
+                    for (const key of Object.keys(structureOptions)) {
+                        const match = (structureOptions[key] || []).find(
+                            (o) => o.value === structVal,
+                        );
+                        if (match) {
+                            parts.push(match.prompt);
+                            break;
                         }
                     }
-                    const customStruct = document
-                        .getElementById("txt-structure")
-                        .value.trim();
-                    if (customStruct) {
-                        parts.push(
-                            "Use this directory layout: " + customStruct + ".",
-                        );
-                    }
+                }
+                const customStruct = document
+                    .getElementById("txt-structure")
+                    .value.trim();
+                if (customStruct) {
+                    parts.push(
+                        "Use this directory layout: " + customStruct + ".",
+                    );
                 }
 
-                // Conventions (asset-mode keeps these — they are style picks)
+                // Conventions
                 if (state.conventions.length) {
                     for (const c of state.conventions) parts.push(c.prompt);
                 }
 
-                // Tooling & platform (code only — toolchain replaces in asset mode)
-                if (!isAsset && state.tooling.length) {
+                // Tooling & platform
+                if (state.tooling.length) {
                     for (const t of state.tooling) parts.push(t.prompt);
                 }
 
@@ -4632,20 +3725,18 @@
                     );
                 }
 
-                // Input (code only)
-                if (!isAsset && state.input && state.input !== "none") {
+                // Input
+                if (state.input && state.input !== "none") {
                     const opts = getInputOpts();
                     const match = opts.find((o) => o.value === state.input);
                     if (match && match.prompt) parts.push(match.prompt);
                 }
 
-                // Error handling (code only)
-                if (!isAsset) {
-                    const errVal =
-                        document.getElementById("sel-errorhandling").value;
-                    if (errVal && errorHandlingPrompts[errVal]) {
-                        parts.push(errorHandlingPrompts[errVal]);
-                    }
+                // Error handling
+                const errVal =
+                    document.getElementById("sel-errorhandling").value;
+                if (errVal && errorHandlingPrompts[errVal]) {
+                    parts.push(errorHandlingPrompts[errVal]);
                 }
 
                 // Traits
@@ -4657,21 +3748,15 @@
                 const extra = document.getElementById("txt-extra").value.trim();
                 if (extra) parts.push(extra);
 
-                // Deliverables format (code only)
-                if (!isAsset) {
-                    const deliv =
-                        document.getElementById("sel-deliverables").value;
-                    if (deliv && deliverablesPrompts[deliv]) {
-                        parts.push(deliverablesPrompts[deliv]);
-                    }
+                // Deliverables format
+                const deliv =
+                    document.getElementById("sel-deliverables").value;
+                if (deliv && deliverablesPrompts[deliv]) {
+                    parts.push(deliverablesPrompts[deliv]);
                 }
 
                 // Closing
-                if (isAsset) {
-                    parts.push(
-                        "Output a single self-contained generation prompt ready to paste into the target tool. Adhere to its native syntax (parameters, weighting, negative prompts) and front-load the most important visual cues.",
-                    );
-                } else if (isPlan) {
+                if (isPlan) {
                     parts.push(
                         "Produce a plan that is clear, unambiguous, and directly executable by an LLM coding agent.",
                     );
@@ -4687,51 +3772,47 @@
 
                 let mainPrompt = parts.join(" ");
 
-                // Existing context block (code only)
-                if (!isAsset) {
-                    const existingCtx = document
-                        .getElementById("txt-existing-context")
-                        .value.trim();
-                    if (existingCtx) {
-                        mainPrompt +=
-                            "\n\nExisting context — respect and reuse where appropriate:\n```\n" +
-                            existingCtx +
-                            "\n```";
-                    }
+                // Existing context block
+                const existingCtx = document
+                    .getElementById("txt-existing-context")
+                    .value.trim();
+                if (existingCtx) {
+                    mainPrompt +=
+                        "\n\nExisting context — respect and reuse where appropriate:\n```\n" +
+                        existingCtx +
+                        "\n```";
+                }
 
-                    // Acceptance criteria block (code only)
-                    const accept = document
-                        .getElementById("txt-acceptance")
-                        .value.trim();
-                    if (accept) {
-                        mainPrompt +=
-                            "\n\nAcceptance criteria — the task is done only when all of these hold:\n" +
-                            accept;
-                    }
+                // Acceptance criteria block
+                const accept = document
+                    .getElementById("txt-acceptance")
+                    .value.trim();
+                if (accept) {
+                    mainPrompt +=
+                        "\n\nAcceptance criteria — the task is done only when all of these hold:\n" +
+                        accept;
                 }
 
                 document.getElementById("prompt-box").value = mainPrompt;
 
-                // Second pass (code only)
+                // Second pass
                 const sp = [];
-                if (!isAsset) {
-                    if (secondPassOrder.length) {
-                        sp.push(
-                            "After completing the above, perform these steps in order:",
-                        );
-                        secondPassOrder.forEach((val, i) => {
-                            if (secondPassPrompts[val]) {
-                                sp.push(`${i + 1}. ${secondPassPrompts[val]}`);
-                            }
-                        });
-                    }
-                    const spExtra = document
-                        .getElementById("txt-secondpass")
-                        .value.trim();
-                    if (spExtra) {
-                        if (!sp.length) sp.push("After completing the above:");
-                        sp.push(spExtra);
-                    }
+                if (secondPassOrder.length) {
+                    sp.push(
+                        "After completing the above, perform these steps in order:",
+                    );
+                    secondPassOrder.forEach((val, i) => {
+                        if (secondPassPrompts[val]) {
+                            sp.push(`${i + 1}. ${secondPassPrompts[val]}`);
+                        }
+                    });
+                }
+                const spExtra = document
+                    .getElementById("txt-secondpass")
+                    .value.trim();
+                if (spExtra) {
+                    if (!sp.length) sp.push("After completing the above:");
+                    sp.push(spExtra);
                 }
 
                 const box2 = document.getElementById("prompt-box-2");
@@ -4819,67 +3900,7 @@
             function onToolchainChange() {
                 state.toolchain =
                     document.getElementById("sel-toolchain").value;
-                const kind = assetToolchainKinds[state.toolchain];
-                if (kind) {
-                    autoSelectAssetMode(kind);
-                }
-                applyModeVisibility();
                 buildPrompt();
-            }
-
-            function autoSelectAssetMode(kind) {
-                const actionSel = document.getElementById("sel-action");
-                if (actionSel.value !== "Generate") {
-                    actionSel.value = "Generate";
-                    onSelect("action");
-                }
-                const presetName =
-                    kind === "image"
-                        ? "Image Gen"
-                        : kind === "video"
-                          ? "Video Gen"
-                          : "3D Mesh Gen";
-                const allAsset = ["Image Gen", "Video Gen", "3D Mesh Gen"];
-                state.activePresets = state.activePresets.filter(
-                    (p) => !allAsset.includes(p),
-                );
-                state.activePresets.push(presetName);
-                document.querySelectorAll(".preset-btn").forEach((b) => {
-                    if (allAsset.includes(b.textContent)) {
-                        b.classList.toggle(
-                            "active",
-                            b.textContent === presetName,
-                        );
-                    } else {
-                        b.classList.remove("active");
-                    }
-                });
-                state.activePresets = state.activePresets.filter(
-                    (p) => p === presetName,
-                );
-                refreshConventions();
-                refreshStructure();
-                refreshTooling();
-                refreshTraits();
-            }
-
-            function isAssetMode() {
-                const tc =
-                    state.toolchain ||
-                    document.getElementById("sel-toolchain").value;
-                if (assetToolchainKinds[tc]) return true;
-                if (state.action === "Generate") return true;
-                return state.activePresets.some((p) =>
-                    assetPresetNames.has(p),
-                );
-            }
-
-            function applyModeVisibility() {
-                const asset = isAssetMode();
-                for (const id of codeOnlyStepIds) {
-                    const el = document.getElementById("step-" + id);
-                    if (el) el.style.display = asset ? "none" : "";
-                }
             }
 
             function onDimensionalityChange() {
@@ -4932,10 +3953,6 @@
                 },
                 { value: "Design", desc: "Architect structure and interfaces" },
                 { value: "Refactor", desc: "Restructure existing code" },
-                {
-                    value: "Generate",
-                    desc: "Produce visual media — image, video, 3D mesh",
-                },
             ];
             populateSelect("sel-action", actionOpts, false);
             initToolchain();
