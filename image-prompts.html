@@ -113,6 +113,17 @@
                 transition: opacity 0.2s;
             }
             .toast.show { opacity: 1; }
+            .platform-hint {
+                font-size: 0.78rem;
+                color: #555;
+                background: #f0f4fa;
+                border-left: 3px solid #4a90d9;
+                padding: 0.5rem 0.7rem;
+                margin-bottom: 0.5rem;
+                border-radius: 3px;
+                display: none;
+                line-height: 1.4;
+            }
             [data-tip] { position: relative; }
             [data-tip]::after {
                 content: attr(data-tip);
@@ -214,6 +225,7 @@
 
         <div class="output-section">
             <div class="output-label">Generated Prompt</div>
+            <div id="platform-hint" class="platform-hint"></div>
             <textarea id="prompt-box" class="prompt-area"></textarea>
             <div class="btn-row">
                 <button onclick="copyPrompt()">Copy</button>
@@ -421,67 +433,108 @@
                 return options.find((o) => o.value === value);
             }
 
+            const platformFormat = {
+                midjourney: "mj",
+                sdxl: "tagged",
+                dalle3: "prose",
+                flux: "prose",
+                nanobanana: "prose",
+                ideogram: "prose",
+                firefly: "prose",
+                leonardo: "prose",
+                recraft: "prose",
+            };
+
             function buildPrompt() {
-                const parts = [];
-
                 const tc = document.getElementById("sel-toolchain").value;
-                if (tc && toolchainPrompts[tc]) {
-                    parts.push("[" + toolchainPrompts[tc] + "]");
-                }
-
                 const subject = document
                     .getElementById("txt-subject")
                     .value.trim();
-                if (subject) {
-                    parts.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
-                }
-
                 const styleVal = document.getElementById("sel-style").value;
                 const style = lookup(styleOptions, styleVal);
-                if (style) parts.push(style.prompt);
-
-                if (state.traits.length) {
-                    parts.push(state.traits.join(", ") + ".");
-                }
-
                 const aspectVal = document.getElementById("sel-aspect").value;
                 const aspect = lookup(aspectOptions, aspectVal);
-                if (aspect) parts.push(aspect.prompt);
-
                 const varVal = document.getElementById("sel-variations").value;
-                if (varVal === "variations") {
-                    parts.push("Coherent set of 4 variations sharing style and subject.");
-                } else if (varVal === "sheet") {
-                    parts.push("Character/asset sheet — multiple views (front, 3-quarter, side, back) with consistent style.");
+                const extra = document.getElementById("txt-extra").value.trim();
+                const negative = document
+                    .getElementById("txt-negative")
+                    .value.trim();
+
+                // Show platform tip above output (not inside prompt)
+                const hintEl = document.getElementById("platform-hint");
+                if (tc && toolchainPrompts[tc]) {
+                    hintEl.textContent = "Tip: " + toolchainPrompts[tc];
+                    hintEl.style.display = "block";
+                } else {
+                    hintEl.textContent = "";
+                    hintEl.style.display = "none";
                 }
 
-                const extra = document.getElementById("txt-extra").value.trim();
-                if (extra) parts.push(extra);
-
                 const hasAny =
-                    tc || subject || styleVal || state.traits.length ||
-                    aspectVal || varVal || extra ||
-                    document.getElementById("txt-negative").value.trim();
+                    subject ||
+                    styleVal ||
+                    state.traits.length ||
+                    aspectVal ||
+                    varVal ||
+                    extra ||
+                    negative;
                 if (!hasAny) {
                     document.getElementById("prompt-box").value = "";
                     return;
                 }
 
-                parts.push(
-                    "Output as a single self-contained generation prompt ready to paste into the target platform. Adhere to its native syntax (parameters, weighting, negative prompts) and front-load the most important visual cues.",
-                );
+                const format = platformFormat[tc] || "prose";
+                let main = "";
 
-                let main = parts.join(" ");
-
-                const negative = document
-                    .getElementById("txt-negative")
-                    .value.trim();
-                if (negative) {
-                    if (tc === "sdxl" || tc === "flux") {
-                        main += "\n\nNegative prompt: " + negative;
-                    } else {
-                        main += "\n\nAvoid: " + negative;
-                    }
+                if (format === "mj") {
+                    const tokens = [];
+                    if (subject) tokens.push(subject);
+                    if (style) tokens.push(style.label.toLowerCase());
+                    for (const t of state.traits) tokens.push(t.toLowerCase());
+                    if (varVal === "sheet")
+                        tokens.push("character sheet, multiple views");
+                    if (extra) tokens.push(extra);
+                    main = tokens.join(", ");
+                    const params = [];
+                    if (aspectVal) params.push("--ar " + aspectVal);
+                    params.push("--v 6");
+                    if (negative) params.push("--no " + negative);
+                    main += " " + params.join(" ");
+                } else if (format === "tagged") {
+                    const tokens = [];
+                    if (subject) tokens.push(subject);
+                    if (style) tokens.push(style.label);
+                    for (const t of state.traits) tokens.push(t);
+                    if (varVal === "sheet")
+                        tokens.push("character sheet, multiple views");
+                    if (extra) tokens.push(extra);
+                    main = tokens.join(", ");
+                    if (aspectVal) main += " (aspect " + aspectVal + ")";
+                    if (negative) main += "\n\nNegative prompt: " + negative;
+                } else {
+                    const sentences = [];
+                    if (subject)
+                        sentences.push(
+                            subject + (/[.!?]$/.test(subject) ? "" : "."),
+                        );
+                    if (style) sentences.push(style.prompt);
+                    if (state.traits.length)
+                        sentences.push(state.traits.join(", ") + ".");
+                    if (aspect) sentences.push(aspect.prompt);
+                    if (varVal === "variations")
+                        sentences.push(
+                            "Render 4 variations sharing style and subject.",
+                        );
+                    else if (varVal === "sheet")
+                        sentences.push(
+                            "Character/asset sheet — front, 3-quarter, side, and back views with consistent style.",
+                        );
+                    if (extra)
+                        sentences.push(
+                            extra + (/[.!?]$/.test(extra) ? "" : "."),
+                        );
+                    main = sentences.join(" ");
+                    if (negative) main += "\n\nAvoid: " + negative;
                 }
 
                 document.getElementById("prompt-box").value = main;

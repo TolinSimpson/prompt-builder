@@ -113,6 +113,17 @@
                 transition: opacity 0.2s;
             }
             .toast.show { opacity: 1; }
+            .platform-hint {
+                font-size: 0.78rem;
+                color: #555;
+                background: #f0f4fa;
+                border-left: 3px solid #4a90d9;
+                padding: 0.5rem 0.7rem;
+                margin-bottom: 0.5rem;
+                border-radius: 3px;
+                display: none;
+                line-height: 1.4;
+            }
             [data-tip] { position: relative; }
             [data-tip]::after {
                 content: attr(data-tip);
@@ -236,6 +247,7 @@
 
         <div class="output-section">
             <div class="output-label">Generated Prompt</div>
+            <div id="platform-hint" class="platform-hint"></div>
             <textarea id="prompt-box" class="prompt-area"></textarea>
             <div class="btn-row">
                 <button onclick="copyPrompt()">Copy</button>
@@ -404,85 +416,97 @@
             }
 
             function buildPrompt() {
-                const parts = [];
-
                 const tc = document.getElementById("sel-toolchain").value;
-                if (tc && toolchainPrompts[tc]) {
-                    parts.push("[" + toolchainPrompts[tc] + "]");
-                }
-
                 const subject = document
                     .getElementById("txt-subject")
                     .value.trim();
-                if (subject) {
-                    parts.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
-                }
-
                 const styleVal = document.getElementById("sel-style").value;
                 const style = lookup(styleOptions, styleVal);
-                if (style) parts.push(style.prompt);
+                const scopeVal = document.getElementById("sel-scope").value;
+                const exportVal = document.getElementById("sel-export").value;
+                const polyVal = document.getElementById("sel-polycount").value;
+                const extra = document.getElementById("txt-extra").value.trim();
+                const negative = document
+                    .getElementById("txt-negative")
+                    .value.trim();
 
-                if (state.traits.length) {
-                    parts.push(state.traits.join(", ") + ".");
+                const hintEl = document.getElementById("platform-hint");
+                if (tc && toolchainPrompts[tc]) {
+                    hintEl.textContent = "Tip: " + toolchainPrompts[tc];
+                    hintEl.style.display = "block";
+                } else {
+                    hintEl.textContent = "";
+                    hintEl.style.display = "none";
                 }
 
-                const scopeVal = document.getElementById("sel-scope").value;
-                const scopeMap = {
-                    single: "Single hero asset — high fidelity, one mesh.",
-                    set: "Asset set — multiple related meshes sharing style and scale.",
-                    "modular-kit": "Modular kit — interlocking tiles/pieces with consistent grid snap.",
-                    "char-full-body": "Full-body character — head to toe, rigging-ready neutral pose.",
-                    "char-bust": "Bust / portrait — head and shoulders only.",
-                    "char-turntable": "Turntable views — front, 3-quarter, side, back with consistent style.",
-                    "tileable-texture": "Tileable material — seamless on all 4 edges, full PBR map set.",
-                    "trim-sheet": "Trim sheet — multiple texture strips in one sheet for UV mapping.",
-                };
-                if (scopeMap[scopeVal]) parts.push(scopeMap[scopeVal]);
-
-                const exportVal = document.getElementById("sel-export").value;
-                const exportMap = {
-                    blender: "Output Blender-ready — FBX / OBJ / glTF, scale 1.0 meters, declare axis orientation (Y-up vs Z-up) explicitly.",
-                    unity: "Output Unity-ready — FBX or glTF, 1m scale, Y-up orientation, pivot at base, lightmap UV channel (UV2).",
-                    unreal: "Output Unreal-ready — FBX, Z-up orientation, 1 unit = 1 cm, separate collision mesh (UCX_ prefix), smoothing groups exported.",
-                    gltf: "Output glTF / GLB — open-standard PBR-native, single binary file, web-ready compression.",
-                    usd: "Output USD (Universal Scene Description) — Pixar interchange format, DCC-agnostic.",
-                };
-                if (exportMap[exportVal]) parts.push(exportMap[exportVal]);
-
-                const polyVal = document.getElementById("sel-polycount").value;
-                const polyMap = {
-                    mobile: "Polycount budget: under 5k triangles (mobile target).",
-                    vr: "Polycount budget: under 15k triangles (VR target, 90+ fps).",
-                    game: "Polycount budget: 15k to 50k triangles (game target).",
-                    hero: "Polycount budget: 50k to 200k triangles (hero / cinematic).",
-                    film: "Polycount budget: 1M+ triangles (film / sculpt, no real-time budget).",
-                };
-                if (polyMap[polyVal]) parts.push(polyMap[polyVal]);
-
-                const extra = document.getElementById("txt-extra").value.trim();
-                if (extra) parts.push(extra);
-
                 const hasAny =
-                    tc || subject || styleVal || state.traits.length ||
-                    scopeVal || exportVal || polyVal || extra ||
-                    document.getElementById("txt-negative").value.trim();
+                    subject ||
+                    styleVal ||
+                    state.traits.length ||
+                    scopeVal ||
+                    exportVal ||
+                    polyVal ||
+                    extra ||
+                    negative;
                 if (!hasAny) {
                     document.getElementById("prompt-box").value = "";
                     return;
                 }
 
-                parts.push(
-                    "Output as a single self-contained generation prompt ready to paste into the target platform. Front-load subject and form; technical spec follows.",
-                );
+                const sentences = [];
+                if (subject)
+                    sentences.push(
+                        subject + (/[.!?]$/.test(subject) ? "" : "."),
+                    );
+                if (style) sentences.push(style.prompt);
+                if (state.traits.length)
+                    sentences.push(state.traits.join(", ") + ".");
 
-                let main = parts.join(" ");
+                const scopeMap = {
+                    single: "Single hero asset — high fidelity, one mesh.",
+                    set: "Asset set — multiple related meshes sharing style and scale.",
+                    "modular-kit":
+                        "Modular kit — interlocking tiles/pieces with consistent grid snap.",
+                    "char-full-body":
+                        "Full-body character — head to toe, rigging-ready neutral pose.",
+                    "char-bust": "Bust / portrait — head and shoulders only.",
+                    "char-turntable":
+                        "Turntable views — front, 3-quarter, side, back with consistent style.",
+                    "tileable-texture":
+                        "Tileable material — seamless on all 4 edges, full PBR map set.",
+                    "trim-sheet":
+                        "Trim sheet — multiple texture strips in one sheet for UV mapping.",
+                };
+                if (scopeMap[scopeVal]) sentences.push(scopeMap[scopeVal]);
 
-                const negative = document
-                    .getElementById("txt-negative")
-                    .value.trim();
-                if (negative) {
-                    main += "\n\nAvoid: " + negative;
-                }
+                const exportMap = {
+                    blender:
+                        "Export as FBX / OBJ / glTF for Blender, scale 1.0 meters, explicit axis orientation.",
+                    unity:
+                        "Export as Unity-ready FBX or glTF, 1m scale, Y-up orientation, pivot at base, secondary lightmap UV channel.",
+                    unreal:
+                        "Export as Unreal-ready FBX, Z-up orientation, 1 unit = 1 cm, separate UCX_ collision mesh, smoothing groups exported.",
+                    gltf:
+                        "Export as glTF / GLB — single binary file, PBR-native, web-ready compression.",
+                    usd: "Export as USD (Universal Scene Description) for DCC interchange.",
+                };
+                if (exportMap[exportVal]) sentences.push(exportMap[exportVal]);
+
+                const polyMap = {
+                    mobile:
+                        "Polycount budget: under 5k triangles (mobile target).",
+                    vr: "Polycount budget: under 15k triangles (VR target, 90+ fps).",
+                    game: "Polycount budget: 15k to 50k triangles (game target).",
+                    hero: "Polycount budget: 50k to 200k triangles (hero / cinematic).",
+                    film: "Polycount budget: 1M+ triangles (film / sculpt, no real-time budget).",
+                };
+                if (polyMap[polyVal]) sentences.push(polyMap[polyVal]);
+
+                if (extra)
+                    sentences.push(extra + (/[.!?]$/.test(extra) ? "" : "."));
+
+                let main = sentences.join(" ");
+                if (negative) main += "\n\nAvoid: " + negative;
 
                 document.getElementById("prompt-box").value = main;
             }

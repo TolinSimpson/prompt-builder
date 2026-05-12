@@ -113,6 +113,17 @@
                 transition: opacity 0.2s;
             }
             .toast.show { opacity: 1; }
+            .platform-hint {
+                font-size: 0.78rem;
+                color: #555;
+                background: #f0f4fa;
+                border-left: 3px solid #4a90d9;
+                padding: 0.5rem 0.7rem;
+                margin-bottom: 0.5rem;
+                border-radius: 3px;
+                display: none;
+                line-height: 1.4;
+            }
             [data-tip] { position: relative; }
             [data-tip]::after {
                 content: attr(data-tip);
@@ -215,6 +226,7 @@
 
         <div class="output-section">
             <div class="output-label">Generated Prompt</div>
+            <div id="platform-hint" class="platform-hint"></div>
             <textarea id="prompt-box" class="prompt-area"></textarea>
             <div class="btn-row">
                 <button onclick="copyPrompt()">Copy</button>
@@ -419,65 +431,64 @@
             }
 
             function buildPrompt() {
-                const parts = [];
-
                 const tc = document.getElementById("sel-toolchain").value;
-                if (tc && toolchainPrompts[tc]) {
-                    parts.push("[" + toolchainPrompts[tc] + "]");
-                }
-
                 const subject = document
                     .getElementById("txt-subject")
                     .value.trim();
-                if (subject) {
-                    parts.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
-                }
-
                 const styleVal = document.getElementById("sel-style").value;
                 const style = lookup(styleOptions, styleVal);
-                if (style) parts.push(style.prompt);
-
-                if (state.traits.length) {
-                    parts.push(state.traits.join(", ") + ".");
-                }
-
                 const aspectVal = document.getElementById("sel-aspect").value;
                 const aspect = lookup(aspectOptions, aspectVal);
-                if (aspect) parts.push(aspect.prompt);
-
                 const scopeVal = document.getElementById("sel-scope").value;
-                const scopeMap = {
-                    short: "Short clip — 3 to 5 seconds, single shot.",
-                    standard: "Standard clip — 5 to 10 seconds, one camera move.",
-                    extended: "Extended clip — 10 to 30 seconds, scene with cuts or continuous coverage.",
-                    loop: "Seamless loop — start frame matches end frame for clean repetition.",
-                };
-                if (scopeMap[scopeVal]) parts.push(scopeMap[scopeVal]);
-
                 const extra = document.getElementById("txt-extra").value.trim();
-                if (extra) parts.push(extra);
+                const negative = document
+                    .getElementById("txt-negative")
+                    .value.trim();
+
+                const hintEl = document.getElementById("platform-hint");
+                if (tc && toolchainPrompts[tc]) {
+                    hintEl.textContent = "Tip: " + toolchainPrompts[tc];
+                    hintEl.style.display = "block";
+                } else {
+                    hintEl.textContent = "";
+                    hintEl.style.display = "none";
+                }
 
                 const hasAny =
-                    tc || subject || styleVal || state.traits.length ||
-                    aspectVal || scopeVal || extra ||
-                    document.getElementById("txt-negative").value.trim();
+                    subject ||
+                    styleVal ||
+                    state.traits.length ||
+                    aspectVal ||
+                    scopeVal ||
+                    extra ||
+                    negative;
                 if (!hasAny) {
                     document.getElementById("prompt-box").value = "";
                     return;
                 }
 
-                parts.push(
-                    "Output as a single self-contained generation prompt ready to paste into the target platform. Front-load the most important visual and motion cues.",
-                );
+                const sentences = [];
+                if (subject)
+                    sentences.push(
+                        subject + (/[.!?]$/.test(subject) ? "" : "."),
+                    );
+                if (style) sentences.push(style.prompt);
+                if (state.traits.length)
+                    sentences.push(state.traits.join(", ") + ".");
+                if (aspect) sentences.push(aspect.prompt);
+                const scopeMap = {
+                    short: "Duration: 3 to 5 seconds, single shot.",
+                    standard: "Duration: 5 to 10 seconds, one camera move.",
+                    extended:
+                        "Duration: 10 to 30 seconds, scene with cuts or continuous coverage.",
+                    loop: "Seamless loop — start frame matches end frame for clean repetition.",
+                };
+                if (scopeMap[scopeVal]) sentences.push(scopeMap[scopeVal]);
+                if (extra)
+                    sentences.push(extra + (/[.!?]$/.test(extra) ? "" : "."));
 
-                let main = parts.join(" ");
-
-                const negative = document
-                    .getElementById("txt-negative")
-                    .value.trim();
-                if (negative) {
-                    main += "\n\nAvoid: " + negative;
-                }
+                let main = sentences.join(" ");
+                if (negative) main += "\n\nAvoid: " + negative;
 
                 document.getElementById("prompt-box").value = main;
             }
