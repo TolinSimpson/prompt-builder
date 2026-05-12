@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Music Prompt Builder</title>
+        <style>
+            * { margin: 0; box-sizing: border-box; }
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 760px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+                background: #fafafa;
+            }
+            h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+            .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+            .step { margin-bottom: 1rem; }
+            .step-label {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+            }
+            .step-hint { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; }
+            select, .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font: inherit;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+            }
+            select { cursor: pointer; }
+            select:focus, .text-input:focus {
+                outline: 2px solid #4a90d9;
+                border-color: #4a90d9;
+            }
+            .text-input { resize: none; height: 2.4rem; }
+            .text-input.tall { height: 3.6rem; }
+            .text-input.lyrics { height: 7rem; resize: vertical; }
+            .checks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
+            .checks label {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.82rem;
+                cursor: pointer;
+                padding: 0.25rem 0.55rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                user-select: none;
+                position: relative;
+            }
+            .checks label:has(input:checked) {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .checks input { display: none; }
+            .section-divider {
+                font-size: 0.7rem;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin: 0.5rem 0 0.15rem;
+                width: 100%;
+            }
+            .output-section {
+                margin-top: 1.5rem;
+                border-top: 1px solid #ddd;
+                padding-top: 1rem;
+            }
+            .output-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            .prompt-area {
+                width: 100%;
+                min-height: 120px;
+                padding: 0.75rem;
+                font: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                resize: vertical;
+                color: #222;
+            }
+            .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+            button {
+                padding: 0.4rem 1rem;
+                font: inherit;
+                cursor: pointer;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #f5f5f5;
+            }
+            button:hover { background: #e0e0e0; }
+            .toast {
+                font-size: 0.8rem;
+                color: #2e7d32;
+                align-self: center;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .toast.show { opacity: 1; }
+            .platform-hint {
+                font-size: 0.78rem;
+                color: #555;
+                background: #f0f4fa;
+                border-left: 3px solid #4a90d9;
+                padding: 0.5rem 0.7rem;
+                margin-bottom: 0.5rem;
+                border-radius: 3px;
+                display: none;
+                line-height: 1.4;
+            }
+            .row { display: flex; gap: 0.5rem; }
+            .row > .step { flex: 1; margin-bottom: 0; }
+            [data-tip] { position: relative; }
+            [data-tip]::after {
+                content: attr(data-tip);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.72rem;
+                line-height: 1.35;
+                padding: 0.35rem 0.55rem;
+                border-radius: 4px;
+                white-space: normal;
+                width: max-content;
+                max-width: 260px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 10;
+            }
+            [data-tip]:hover::after { opacity: 1; }
+        </style>
+    </head>
+    <body>
+        <h1>Music Prompt Builder</h1>
+        <p class="subtitle">
+            Build platform-tuned prompt for music generation. Suno gets
+            bracket-tag lyric scaffolding; Udio, Stable Audio, MusicGen get
+            their native tag/prose format.
+        </p>
+
+        <div class="step">
+            <span class="step-label" data-tip="Target music-gen platform. Sets native format — Suno bracket sections, Udio tag stack, Stable Audio bpm+duration tags, MusicGen prose.">Target Platform</span>
+            <select id="sel-toolchain" onchange="buildPrompt()">
+                <option value="">Choose platform...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Primary genre. Sets sonic baseline before mood and instrumentation layer on.">Genre</span>
+            <select id="sel-genre" onchange="buildPrompt()">
+                <option value="">No specific genre...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="High-level concept of the song — narrative, scene, vibe.">Song Concept</span>
+            <span class="step-hint">Describe the song — story, scene, vibe, intention</span>
+            <textarea
+                class="text-input tall"
+                id="txt-subject"
+                placeholder="e.g. melancholic late-night drive through neon-lit rain, looking back on a lost love"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Lyrics. For Suno, use bracket section tags like [Verse], [Chorus], [Bridge], [Instrumental]. Leave empty for instrumental.">Lyrics (optional)</span>
+            <span class="step-hint">Suno-style bracket tags supported: [Verse], [Chorus], [Bridge], [Instrumental], [Outro]</span>
+            <textarea
+                class="text-input lyrics"
+                id="txt-lyrics"
+                placeholder="[Verse]&#10;Headlights paint the rain in gold&#10;Empty road, the night is cold&#10;&#10;[Chorus]&#10;..."
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="row">
+            <div class="step">
+                <span class="step-label" data-tip="Tempo band — used as fallback when BPM number not set.">Tempo</span>
+                <select id="sel-tempo" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+            <div class="step">
+                <span class="step-label" data-tip="Exact beats-per-minute override. Overrides tempo band if set.">BPM (optional)</span>
+                <input
+                    class="text-input"
+                    id="txt-bpm"
+                    type="number"
+                    min="40"
+                    max="220"
+                    placeholder="e.g. 92"
+                    oninput="buildPrompt()"
+                />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="step">
+                <span class="step-label" data-tip="Musical key. Optional — most platforms infer from context.">Key (optional)</span>
+                <select id="sel-key" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+            <div class="step">
+                <span class="step-label" data-tip="Target track length. Stable Audio uses this as a hard parameter; others as a hint.">Duration</span>
+                <select id="sel-duration" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Mood + instruments + vocals + production + structure tags. Pick all that apply.">Sonic Palette</span>
+            <span class="step-hint">Mood, instruments, vocal style, production/era, song-structure tags</span>
+            <div class="checks" id="trait-checks"></div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Things to exclude — distorted vocals, drum machine, etc. Appended as 'Avoid:' line.">Negative Prompt (optional)</span>
+            <textarea
+                class="text-input"
+                id="txt-negative"
+                placeholder="distorted vocals, harsh treble, generic stock-music feel"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Anything else — references, specific artist influence, technical constraints.">Extra (optional)</span>
+            <textarea
+                class="text-input tall"
+                id="txt-extra"
+                placeholder="e.g. reference: Bon Iver atmosphere meets The Weeknd production"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="output-section">
+            <div class="output-label">Generated Prompt</div>
+            <div id="platform-hint" class="platform-hint"></div>
+            <textarea id="prompt-box" class="prompt-area"></textarea>
+            <div class="btn-row">
+                <button onclick="copyPrompt()">Copy</button>
+                <button onclick="resetAll()">Reset</button>
+                <span class="toast" id="toast">Copied!</span>
+            </div>
+        </div>
+        <br />
+        <p><a href="index.html">&larr; Back to prompt builder hub</a></p>
+
+        <script>
+            const toolchainOptions = [
+                { value: "suno-v4", label: "Suno v4" },
+                { value: "suno-v35", label: "Suno v3.5" },
+                { value: "udio", label: "Udio" },
+                { value: "stableaudio2", label: "Stable Audio 2" },
+                { value: "musicgen", label: "MusicGen" },
+                { value: "riffusion", label: "Riffusion" },
+                { value: "aiva", label: "AIVA" },
+                { value: "soundraw", label: "Soundraw" },
+            ];
+
+            const toolchainPrompts = {
+                "suno-v4":
+                    "Target Suno v4. Two-field model: Style Description (genre + mood + production, comma-delimited, ~200 chars max) + Lyrics with bracket section tags [Verse], [Chorus], [Bridge], [Instrumental], [Outro]. v4 has cleaner vocals and longer coherent structure than v3.5.",
+                "suno-v35":
+                    "Target Suno v3.5. Two-field model — Style + Lyrics with bracket tags. v3.5 is more experimental and unpredictable than v4; good for genre-bending and lo-fi character.",
+                udio:
+                    "Target Udio. Comma-delimited descriptive tag stack — front-load genre, then mood, era, instruments, vocal style. Lyrics optional in [Verse]/[Chorus] bracket tags below the tag stack.",
+                stableaudio2:
+                    "Target Stable Audio 2. Short tag list. Always include bpm and duration as explicit parameters. Instrumental only — no vocal generation.",
+                musicgen:
+                    "Target Meta MusicGen. Single prose sentence describing music. Instrumental only. State bpm, key, instrumentation explicitly. Short clips (30s typical, 2min max).",
+                riffusion:
+                    "Target Riffusion. Short prose, ~12s clips. Genre + 1-2 mood/instrument anchors. Built on spectrogram diffusion — abstract textural prompts work well.",
+                aiva:
+                    "Target AIVA. Descriptive prose — mood, tempo, instrumentation. Pick a preset style category in the AIVA UI (cinematic, electronic, ambient) and feed the prompt as additional direction.",
+                soundraw:
+                    "Target Soundraw. UI is parameter-driven — translate the prompt into Soundraw's selectable fields: genre, mood, length, tempo, theme keywords.",
+            };
+
+            const genreOptions = [
+                { value: "rock", label: "Rock", prompt: "rock" },
+                { value: "pop", label: "Pop", prompt: "pop" },
+                { value: "hip-hop", label: "Hip-hop", prompt: "hip-hop" },
+                { value: "trap", label: "Trap", prompt: "trap" },
+                { value: "rnb", label: "R&B", prompt: "R&B" },
+                { value: "jazz", label: "Jazz", prompt: "jazz" },
+                { value: "lofi", label: "Lo-fi hip-hop", prompt: "lo-fi hip-hop" },
+                { value: "ambient", label: "Ambient", prompt: "ambient" },
+                { value: "edm", label: "EDM", prompt: "EDM" },
+                { value: "house", label: "House", prompt: "house" },
+                { value: "dnb", label: "Drum and bass", prompt: "drum and bass" },
+                { value: "synthwave", label: "Synthwave", prompt: "synthwave" },
+                { value: "orchestral", label: "Orchestral / cinematic", prompt: "orchestral cinematic" },
+                { value: "folk", label: "Folk / acoustic", prompt: "folk acoustic" },
+                { value: "blues", label: "Blues", prompt: "blues" },
+                { value: "kpop", label: "K-pop", prompt: "K-pop" },
+                { value: "metal", label: "Metal", prompt: "metal" },
+                { value: "country", label: "Country", prompt: "country" },
+                { value: "reggae", label: "Reggae", prompt: "reggae" },
+                { value: "gospel", label: "Gospel", prompt: "gospel" },
+            ];
+
+            const tempoOptions = [
+                { value: "slow", label: "Slow (60-80 bpm)", prompt: "slow tempo around 70 bpm", bpm: 70 },
+                { value: "mid", label: "Mid (80-110 bpm)", prompt: "mid tempo around 95 bpm", bpm: 95 },
+                { value: "upbeat", label: "Upbeat (110-135 bpm)", prompt: "upbeat tempo around 122 bpm", bpm: 122 },
+                { value: "fast", label: "Fast (135-160 bpm)", prompt: "fast tempo around 145 bpm", bpm: 145 },
+                { value: "very-fast", label: "Very fast (160+ bpm)", prompt: "very fast tempo around 175 bpm", bpm: 175 },
+            ];
+
+            const keyOptions = [
+                { value: "c-maj", label: "C major", prompt: "C major" },
+                { value: "g-maj", label: "G major", prompt: "G major" },
+                { value: "d-maj", label: "D major", prompt: "D major" },
+                { value: "f-maj", label: "F major", prompt: "F major" },
+                { value: "bb-maj", label: "B♭ major", prompt: "B♭ major" },
+                { value: "a-min", label: "A minor", prompt: "A minor" },
+                { value: "e-min", label: "E minor", prompt: "E minor" },
+                { value: "d-min", label: "D minor", prompt: "D minor" },
+                { value: "f-min", label: "F minor", prompt: "F minor" },
+            ];
+
+            const durationOptions = [
+                { value: "15s", label: "15-second clip", prompt: "15 seconds", seconds: 15 },
+                { value: "30s", label: "30-second clip", prompt: "30 seconds", seconds: 30 },
+                { value: "1m", label: "1 minute", prompt: "1 minute", seconds: 60 },
+                { value: "2m", label: "2 minutes", prompt: "2 minutes", seconds: 120 },
+                { value: "full", label: "Full song (~3 min)", prompt: "full song around 3 minutes", seconds: 180 },
+            ];
+
+            const traitGroups = [
+                {
+                    label: "Mood / Energy",
+                    items: [
+                        ["Uplifting", "Bright major-key feel, rising energy"],
+                        ["Melancholic", "Wistful, minor-key, reflective"],
+                        ["Aggressive", "High-energy, hard-edged, driving"],
+                        ["Dreamy", "Reverb-soaked, floating, ethereal"],
+                        ["Dark", "Brooding, ominous, low register dominant"],
+                        ["Hopeful", "Forward-leaning, anthemic"],
+                        ["Romantic", "Tender, intimate, warm"],
+                        ["Anxious", "Tense, restless, off-kilter"],
+                        ["Triumphant", "Victory-anthem, soaring, declarative"],
+                    ],
+                },
+                {
+                    label: "Instruments",
+                    items: [
+                        ["Acoustic guitar", "Steel-string or nylon acoustic"],
+                        ["Electric guitar", "Clean or distorted electric"],
+                        ["Piano", "Acoustic grand or upright piano"],
+                        ["Synth pad", "Sustained ambient synthesizer pad"],
+                        ["808 bass", "Sub-frequency 808 kick/bass — hip-hop staple"],
+                        ["Strings", "Orchestral string section"],
+                        ["Brass", "Trumpet, trombone, horn section"],
+                        ["Choir", "Layered vocal harmony pad"],
+                        ["Drum kit", "Live or sampled acoustic drum kit"],
+                        ["Lo-fi drums", "Dusty, filtered, off-grid drums"],
+                        ["Analog synth", "Moog/Juno-style warm analog synth"],
+                        ["Fingerpicked guitar", "Travis-picked / classical fingerstyle"],
+                    ],
+                },
+                {
+                    label: "Vocal Style",
+                    items: [
+                        ["Male tenor", "Higher male vocal range"],
+                        ["Female alto", "Lower female vocal range"],
+                        ["Breathy female", "Soft intimate breathy delivery"],
+                        ["Rap flow", "Rhythmic spoken rap delivery"],
+                        ["Vocoder / auto-tune", "Pitch-corrected robotic vocal"],
+                        ["Choir / gang vocals", "Group unison or harmonized vocal"],
+                        ["Spoken word", "Conversational unsung delivery"],
+                        ["No vocals (instrumental)", "No vocal track — instrumental only"],
+                    ],
+                },
+                {
+                    label: "Production / Era",
+                    items: [
+                        ["Vintage analog 70s", "Tape saturation, warm analog, 1970s console sound"],
+                        ["Polished modern pop", "Contemporary radio-ready production, sidechained mix"],
+                        ["Raw garage", "Lo-fi room sound, unpolished, energetic"],
+                        ["Hi-fi studio", "Pristine modern studio recording"],
+                        ["Lo-fi cassette", "Cassette wow/flutter, hiss, warm low end"],
+                        ["Sidechained EDM", "Pumping ducked bass synced to kick"],
+                        ["Vinyl crackle", "Surface noise / vinyl character"],
+                        ["Wall-of-sound", "Dense layered Spector-style production"],
+                    ],
+                },
+                {
+                    label: "Song Structure (Suno helper)",
+                    items: [
+                        ["Intro", "Opening section before verse"],
+                        ["Verse", "Narrative section"],
+                        ["Pre-Chorus", "Build section between verse and chorus"],
+                        ["Chorus", "Main hook section"],
+                        ["Bridge", "Contrast section, usually after second chorus"],
+                        ["Outro", "Closing section"],
+                        ["Drop", "EDM/dance climax section"],
+                        ["Build-up", "Tension-building riser section"],
+                    ],
+                },
+            ];
+
+            const STRUCTURE_TAGS = new Set([
+                "Intro", "Verse", "Pre-Chorus", "Chorus",
+                "Bridge", "Outro", "Drop", "Build-up",
+            ]);
+
+            const platformFormat = {
+                "suno-v4": "suno", "suno-v35": "suno",
+                udio: "tagged",
+                stableaudio2: "sa2",
+                musicgen: "prose", riffusion: "prose",
+                aiva: "prose", soundraw: "prose",
+            };
+
+            const state = { traits: [] };
+
+            function init() {
+                populateSelect("sel-toolchain", toolchainOptions, "Choose platform...");
+                populateSelect("sel-genre", genreOptions, "No specific genre...");
+                populateSelect("sel-tempo", tempoOptions, "No preference...");
+                populateSelect("sel-key", keyOptions, "No preference...");
+                populateSelect("sel-duration", durationOptions, "No preference...");
+                populateTraits();
+            }
+
+            function populateSelect(id, options, placeholder) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = `<option value="">${placeholder}</option>`;
+                for (const o of options) {
+                    const opt = document.createElement("option");
+                    opt.value = o.value;
+                    opt.textContent = o.label;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function populateTraits() {
+                const container = document.getElementById("trait-checks");
+                container.innerHTML = "";
+                for (const group of traitGroups) {
+                    const divider = document.createElement("div");
+                    divider.className = "section-divider";
+                    divider.textContent = group.label;
+                    container.appendChild(divider);
+                    for (const [name, tip] of group.items) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute("data-tip", tip);
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = name;
+                        cb.onchange = updateTraitsAndBuild;
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(name));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateTraitsAndBuild() {
+                state.traits = [
+                    ...document.querySelectorAll("#trait-checks input:checked"),
+                ].map((c) => c.value);
+                buildPrompt();
+            }
+
+            function lookup(options, value) {
+                return options.find((o) => o.value === value);
+            }
+
+            function partitionTraits() {
+                const moodSet = new Set(traitGroups[0].items.map(i => i[0]));
+                const instrSet = new Set(traitGroups[1].items.map(i => i[0]));
+                const vocalSet = new Set(traitGroups[2].items.map(i => i[0]));
+                const prodSet = new Set(traitGroups[3].items.map(i => i[0]));
+                return {
+                    moods: state.traits.filter(t => moodSet.has(t)),
+                    instruments: state.traits.filter(t => instrSet.has(t)),
+                    vocals: state.traits.filter(t => vocalSet.has(t)),
+                    production: state.traits.filter(t => prodSet.has(t)),
+                    structure: state.traits.filter(t => STRUCTURE_TAGS.has(t)),
+                };
+            }
+
+            function effectiveBpm(bpmInput, tempo) {
+                if (bpmInput) return parseInt(bpmInput, 10);
+                if (tempo) return tempo.bpm;
+                return null;
+            }
+
+            function buildPrompt() {
+                const tc = document.getElementById("sel-toolchain").value;
+                const subject = document.getElementById("txt-subject").value.trim();
+                const lyrics = document.getElementById("txt-lyrics").value.trim();
+                const genreVal = document.getElementById("sel-genre").value;
+                const genre = lookup(genreOptions, genreVal);
+                const tempoVal = document.getElementById("sel-tempo").value;
+                const tempo = lookup(tempoOptions, tempoVal);
+                const bpmInput = document.getElementById("txt-bpm").value.trim();
+                const keyVal = document.getElementById("sel-key").value;
+                const key = lookup(keyOptions, keyVal);
+                const durationVal = document.getElementById("sel-duration").value;
+                const duration = lookup(durationOptions, durationVal);
+                const extra = document.getElementById("txt-extra").value.trim();
+                const negative = document.getElementById("txt-negative").value.trim();
+
+                const hintEl = document.getElementById("platform-hint");
+                if (tc && toolchainPrompts[tc]) {
+                    hintEl.textContent = "Tip: " + toolchainPrompts[tc];
+                    hintEl.style.display = "block";
+                } else {
+                    hintEl.textContent = "";
+                    hintEl.style.display = "none";
+                }
+
+                const hasAny = subject || lyrics || genreVal || tempoVal || bpmInput ||
+                    keyVal || durationVal || state.traits.length || extra || negative;
+                if (!hasAny) {
+                    document.getElementById("prompt-box").value = "";
+                    return;
+                }
+
+                const parts = partitionTraits();
+                const bpm = effectiveBpm(bpmInput, tempo);
+                const format = platformFormat[tc] || "prose";
+                const hasNoVocals = parts.vocals.includes("No vocals (instrumental)");
+
+                let out = "";
+
+                if (format === "suno") {
+                    const styleTokens = [];
+                    if (genre) styleTokens.push(genre.prompt);
+                    parts.moods.forEach(m => styleTokens.push(m.toLowerCase()));
+                    parts.instruments.forEach(i => styleTokens.push(i.toLowerCase()));
+                    parts.vocals
+                        .filter(v => v !== "No vocals (instrumental)")
+                        .forEach(v => styleTokens.push(v.toLowerCase()));
+                    parts.production.forEach(p => styleTokens.push(p.toLowerCase()));
+                    if (bpm) styleTokens.push(bpm + " bpm");
+                    if (key) styleTokens.push(key.prompt);
+                    if (subject) styleTokens.push(subject);
+                    if (extra) styleTokens.push(extra);
+                    const styleLine = styleTokens.join(", ");
+
+                    let lyricsBlock = lyrics;
+                    if (!lyricsBlock) {
+                        if (hasNoVocals) {
+                            lyricsBlock = "[Instrumental]";
+                        } else if (parts.structure.length) {
+                            lyricsBlock = parts.structure.map(s => `[${s}]`).join("\n");
+                        }
+                    }
+
+                    out = `[Style]\n${styleLine}`;
+                    if (lyricsBlock) out += `\n\n[Lyrics]\n${lyricsBlock}`;
+                } else if (format === "tagged") {
+                    const tags = [];
+                    if (genre) tags.push(genre.prompt);
+                    parts.moods.forEach(m => tags.push(m.toLowerCase()));
+                    parts.production.forEach(p => tags.push(p.toLowerCase()));
+                    parts.instruments.forEach(i => tags.push(i.toLowerCase()));
+                    parts.vocals
+                        .filter(v => v !== "No vocals (instrumental)")
+                        .forEach(v => tags.push(v.toLowerCase()));
+                    if (hasNoVocals) tags.push("instrumental");
+                    if (bpm) tags.push(bpm + " bpm");
+                    if (key) tags.push(key.prompt);
+                    if (duration) tags.push(duration.prompt);
+                    if (subject) tags.push(subject);
+                    if (extra) tags.push(extra);
+                    out = tags.join(", ");
+                    if (lyrics) out += `\n\n${lyrics}`;
+                } else if (format === "sa2") {
+                    const tags = [];
+                    if (genre) tags.push(genre.prompt);
+                    parts.moods.forEach(m => tags.push(m.toLowerCase()));
+                    parts.instruments.forEach(i => tags.push(i.toLowerCase()));
+                    parts.production.forEach(p => tags.push(p.toLowerCase()));
+                    if (subject) tags.push(subject);
+                    if (extra) tags.push(extra);
+                    tags.push("instrumental");
+                    const tagLine = tags.join(", ");
+                    const bpmVal = bpm || 110;
+                    const durSec = duration ? duration.seconds : 30;
+                    out = `${tagLine}\nbpm: ${bpmVal}, duration: ${durSec}s`;
+                } else {
+                    const sentences = [];
+                    const lead = genre ? `${genre.prompt} track` : "Music track";
+                    let opener = lead;
+                    if (parts.moods.length) opener += ` with ${parts.moods.join(", ").toLowerCase()} mood`;
+                    sentences.push(opener + ".");
+                    if (parts.instruments.length)
+                        sentences.push(`Instrumentation: ${parts.instruments.join(", ").toLowerCase()}.`);
+                    if (parts.vocals.length) {
+                        if (hasNoVocals) {
+                            sentences.push("Instrumental — no vocals.");
+                        } else {
+                            sentences.push(`Vocals: ${parts.vocals.join(", ").toLowerCase()}.`);
+                        }
+                    }
+                    if (parts.production.length)
+                        sentences.push(`Production: ${parts.production.join(", ").toLowerCase()}.`);
+                    if (bpm) sentences.push(`Tempo around ${bpm} bpm.`);
+                    if (key) sentences.push(`Key: ${key.prompt}.`);
+                    if (duration) sentences.push(`Duration ${duration.prompt}.`);
+                    if (parts.structure.length)
+                        sentences.push(`Structure: ${parts.structure.join(", ").toLowerCase()}.`);
+                    if (subject) sentences.push(subject + (/[.!?]$/.test(subject) ? "" : "."));
+                    if (extra) sentences.push(extra + (/[.!?]$/.test(extra) ? "" : "."));
+                    out = sentences.join(" ");
+                }
+
+                if (negative) out += `\n\nAvoid: ${negative}`;
+
+                document.getElementById("prompt-box").value = out;
+            }
+
+            function copyPrompt() {
+                navigator.clipboard
+                    .writeText(document.getElementById("prompt-box").value)
+                    .then(() => {
+                        const msg = document.getElementById("toast");
+                        msg.classList.add("show");
+                        setTimeout(() => msg.classList.remove("show"), 1500);
+                    });
+            }
+
+            function resetAll() {
+                [
+                    "sel-toolchain", "sel-genre", "txt-subject", "txt-lyrics",
+                    "sel-tempo", "txt-bpm", "sel-key", "sel-duration",
+                    "txt-negative", "txt-extra",
+                ].forEach(id => { document.getElementById(id).value = ""; });
+                state.traits = [];
+                document
+                    .querySelectorAll("#trait-checks input:checked")
+                    .forEach((c) => (c.checked = false));
+                document.getElementById("prompt-box").value = "";
+                document.getElementById("platform-hint").style.display = "none";
+            }
+
+            init();
+        </script>
+    </body>
+</html>

@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>TTS / Voice Prompt Builder</title>
+        <style>
+            * { margin: 0; box-sizing: border-box; }
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 760px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #222;
+                background: #fafafa;
+            }
+            h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+            .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+            .step { margin-bottom: 1rem; }
+            .step-label {
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.25rem;
+            }
+            .step-hint { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; }
+            select, .text-input {
+                width: 100%;
+                padding: 0.5rem;
+                font: inherit;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+            }
+            select { cursor: pointer; }
+            select:focus, .text-input:focus {
+                outline: 2px solid #4a90d9;
+                border-color: #4a90d9;
+            }
+            .text-input { resize: none; height: 2.4rem; }
+            .text-input.tall { height: 3.6rem; }
+            .text-input.script { height: 8rem; resize: vertical; }
+            .checks { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
+            .checks label {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.82rem;
+                cursor: pointer;
+                padding: 0.25rem 0.55rem;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                user-select: none;
+                position: relative;
+            }
+            .checks label:has(input:checked) {
+                background: #e8f0fe;
+                border-color: #4a90d9;
+            }
+            .checks input { display: none; }
+            .section-divider {
+                font-size: 0.7rem;
+                color: #999;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin: 0.5rem 0 0.15rem;
+                width: 100%;
+            }
+            .output-section {
+                margin-top: 1.5rem;
+                border-top: 1px solid #ddd;
+                padding-top: 1rem;
+            }
+            .output-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #555;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-bottom: 0.5rem;
+            }
+            .prompt-area {
+                width: 100%;
+                min-height: 160px;
+                padding: 0.75rem;
+                font: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: #fff;
+                resize: vertical;
+                color: #222;
+                font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            }
+            .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+            button {
+                padding: 0.4rem 1rem;
+                font: inherit;
+                cursor: pointer;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #f5f5f5;
+            }
+            button:hover { background: #e0e0e0; }
+            .toast {
+                font-size: 0.8rem;
+                color: #2e7d32;
+                align-self: center;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .toast.show { opacity: 1; }
+            .platform-hint {
+                font-size: 0.78rem;
+                color: #555;
+                background: #f0f4fa;
+                border-left: 3px solid #4a90d9;
+                padding: 0.5rem 0.7rem;
+                margin-bottom: 0.5rem;
+                border-radius: 3px;
+                display: none;
+                line-height: 1.4;
+            }
+            .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+            .row > .step { flex: 1; min-width: 220px; margin-bottom: 0; }
+            [data-tip] { position: relative; }
+            [data-tip]::after {
+                content: attr(data-tip);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: #fff;
+                font-size: 0.72rem;
+                line-height: 1.35;
+                padding: 0.35rem 0.55rem;
+                border-radius: 4px;
+                white-space: normal;
+                width: max-content;
+                max-width: 260px;
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.15s;
+                z-index: 10;
+            }
+            [data-tip]:hover::after { opacity: 1; }
+        </style>
+    </head>
+    <body>
+        <h1>TTS / Voice Prompt Builder</h1>
+        <p class="subtitle">
+            Build platform-tuned prompt for text-to-speech. Output adapts:
+            ElevenLabs v3 inline emotion tags, OpenAI gpt-4o-tts instructions
+            block, Google / Polly / Azure SSML, voice-description for the rest.
+        </p>
+
+        <div class="step">
+            <span class="step-label" data-tip="Target TTS engine. Sets native output format — inline emotion tags, SSML, instructions block, or plain voice description.">Target Platform</span>
+            <select id="sel-toolchain" onchange="buildPrompt()">
+                <option value="">Choose platform...</option>
+            </select>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="The text the model should speak. SSML platforms will escape any &lt; and &amp; characters automatically.">Text to Speak</span>
+            <span class="step-hint">Use punctuation for natural pauses. Triple-dot (...) and em-dash ( — ) become &lt;break&gt; tags on SSML platforms.</span>
+            <textarea
+                class="text-input script"
+                id="txt-script"
+                placeholder="Welcome to the broadcast. Tonight... we explore something extraordinary — a story that began thirty years ago."
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="row">
+            <div class="step">
+                <span class="step-label" data-tip="Voice archetype. Influences voice description for ElevenLabs, Cartesia, PlayHT, Resemble; appears in instructions/style note for others.">Voice Profile</span>
+                <select id="sel-voice" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+            <div class="step">
+                <span class="step-label" data-tip="Accent / regional inflection.">Accent / Region</span>
+                <select id="sel-accent" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="step">
+                <span class="step-label" data-tip="Approximate age of speaker.">Age Range</span>
+                <select id="sel-age" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+            <div class="step">
+                <span class="step-label" data-tip="Delivery context — conversational, dramatic, news-broadcast, etc.">Delivery Style</span>
+                <select id="sel-delivery" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="step">
+                <span class="step-label" data-tip="Emotional tone. Maps to Azure mstts:express-as style on Azure; appears in voice description elsewhere.">Emotion / Mood</span>
+                <select id="sel-emotion" onchange="buildPrompt()">
+                    <option value="">Neutral...</option>
+                </select>
+            </div>
+            <div class="step">
+                <span class="step-label" data-tip="Speech speed. Maps to SSML prosody rate on Google / Polly / Azure.">Pace / Speed</span>
+                <select id="sel-pace" onchange="buildPrompt()">
+                    <option value="">Natural pace...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="step">
+                <span class="step-label" data-tip="Pitch shift. Maps to SSML prosody pitch on Google / Azure (Polly Neural ignores pitch).">Pitch</span>
+                <select id="sel-pitch" onchange="buildPrompt()">
+                    <option value="">Natural pitch...</option>
+                </select>
+            </div>
+            <div class="step">
+                <span class="step-label" data-tip="Acoustic environment / post-processing flavor. Appears in voice description as a style cue.">Audio Environment (optional)</span>
+                <select id="sel-audio" onchange="buildPrompt()">
+                    <option value="">No preference...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Inline performance cues for ElevenLabs v3. Other platforms ignore these — included as a style cue in the voice description instead.">Inline Direction Tags (ElevenLabs v3)</span>
+            <span class="step-hint">Bracket tags applied per script. On non-v3 platforms these merge into the voice description as additional style cues.</span>
+            <div class="checks" id="trait-checks"></div>
+        </div>
+
+        <div class="step">
+            <span class="step-label" data-tip="Anything else — pronunciation notes, character backstory, additional direction.">Extra Notes (optional)</span>
+            <textarea
+                class="text-input tall"
+                id="txt-extra"
+                placeholder="e.g. pronounce 'Caoimhe' as KEE-va; speaker is recalling a fond memory"
+                oninput="buildPrompt()"
+            ></textarea>
+        </div>
+
+        <div class="output-section">
+            <div class="output-label">Generated Prompt</div>
+            <div id="platform-hint" class="platform-hint"></div>
+            <textarea id="prompt-box" class="prompt-area"></textarea>
+            <div class="btn-row">
+                <button onclick="copyPrompt()">Copy</button>
+                <button onclick="resetAll()">Reset</button>
+                <span class="toast" id="toast">Copied!</span>
+            </div>
+        </div>
+        <br />
+        <p><a href="index.html">&larr; Back to prompt builder hub</a></p>
+
+        <script>
+            const toolchainOptions = [
+                { value: "elevenlabs-v3", label: "ElevenLabs v3" },
+                { value: "elevenlabs-v2", label: "ElevenLabs Multilingual v2" },
+                { value: "openai-tts1", label: "OpenAI tts-1" },
+                { value: "openai-4o-mini-tts", label: "OpenAI gpt-4o-mini-tts" },
+                { value: "openai-4o-tts", label: "OpenAI gpt-4o-tts" },
+                { value: "google-neural2", label: "Google Cloud TTS (Neural2)" },
+                { value: "google-studio", label: "Google Cloud TTS (Studio)" },
+                { value: "polly-neural", label: "Amazon Polly (Neural)" },
+                { value: "azure-neural", label: "Microsoft Azure Speech (Neural)" },
+                { value: "cartesia-sonic", label: "Cartesia Sonic" },
+                { value: "playht", label: "PlayHT" },
+                { value: "resemble", label: "Resemble AI" },
+            ];
+
+            const toolchainPrompts = {
+                "elevenlabs-v3":
+                    "Target ElevenLabs v3. Inline emotion tags supported — [whispering], [laughing], [sighs], [excited], [sarcastic], [crying], [angry], [shouting], [hesitant]. Place tags before the text they color; v3 reads them as performance cues, not literal speech.",
+                "elevenlabs-v2":
+                    "Target ElevenLabs Multilingual v2. No inline emotion tags. Set Stability and Similarity sliders in the dashboard. Emotion comes from punctuation, text framing, and voice clone choice.",
+                "openai-tts1":
+                    "Target OpenAI tts-1 / tts-1-hd. No instructions field, no SSML. Convey emotion via word choice and punctuation. Pick a voice id (alloy, echo, fable, onyx, nova, shimmer) in the API call.",
+                "openai-4o-mini-tts":
+                    "Target OpenAI gpt-4o-mini-tts. Supports a separate 'instructions' field for voice/style direction. Script goes in 'input', delivery directives in 'instructions'.",
+                "openai-4o-tts":
+                    "Target OpenAI gpt-4o-tts. Same shape as gpt-4o-mini-tts but higher fidelity. 'instructions' takes natural-language style direction — accent, pacing, emotion.",
+                "google-neural2":
+                    "Target Google Cloud TTS Neural2. SSML supported: <speak>, <prosody rate pitch volume>, <break time>, <emphasis>, <say-as>, <phoneme>. Pick a Neural2 voice locale (en-US-Neural2-J etc.) in the API call.",
+                "google-studio":
+                    "Target Google Cloud TTS Studio. Studio voices accept SSML and render with broadcast-grade prosody. Use <break> sparingly — engine pauses naturally on punctuation.",
+                "polly-neural":
+                    "Target Amazon Polly Neural. SSML supported with engine='neural'. Note: Polly Neural ignores <prosody pitch> and <emphasis> — use <break>, <prosody rate volume>, <say-as>.",
+                "azure-neural":
+                    "Target Microsoft Azure Speech (Neural). Supports SSML plus mstts:express-as for emotion (cheerful, sad, angry, excited, friendly, hopeful, shouting, whispering, terrified, unfriendly). styledegree 0.01-2.",
+                "cartesia-sonic":
+                    "Target Cartesia Sonic. Voice cloning + style transfer. Pass plain text + a voice-description prompt. Low latency streaming. No inline tags.",
+                "playht":
+                    "Target PlayHT. Plain text + voice selection. Use Play 3.0 for emotional control via voice description; punctuation drives pacing.",
+                "resemble":
+                    "Target Resemble AI. Plain text + voice description. Supports phonemes for pronunciation control. Emotion comes from the voice clone selection.",
+            };
+
+            const voiceOptions = [
+                { value: "deep-narrator", label: "Deep male narrator", prompt: "deep resonant male narrator voice" },
+                { value: "warm-conv-f", label: "Warm conversational female", prompt: "warm conversational female voice" },
+                { value: "warm-conv-m", label: "Warm conversational male", prompt: "warm conversational male voice" },
+                { value: "child", label: "Child voice", prompt: "young child voice" },
+                { value: "elderly", label: "Elderly voice", prompt: "elderly voice with age-appropriate timbre" },
+                { value: "robotic", label: "Neutral robotic", prompt: "neutral robotic synthetic voice" },
+                { value: "villain", label: "Character villain", prompt: "menacing character-actor villain voice" },
+                { value: "news-anchor", label: "News anchor", prompt: "authoritative news-anchor voice" },
+                { value: "audiobook", label: "Audiobook narrator", prompt: "polished audiobook narrator voice" },
+                { value: "customer-service", label: "Customer-service agent", prompt: "friendly customer-service agent voice" },
+                { value: "podcaster", label: "Podcaster", prompt: "casual podcaster voice" },
+            ];
+
+            const accentOptions = [
+                { value: "neutral", label: "Neutral / unmarked", prompt: "neutral unmarked accent" },
+                { value: "us-general", label: "American General", prompt: "General American accent" },
+                { value: "uk-rp", label: "British RP", prompt: "British Received Pronunciation accent" },
+                { value: "uk-cockney", label: "Cockney", prompt: "Cockney London accent" },
+                { value: "uk-scottish", label: "Scottish", prompt: "Scottish accent" },
+                { value: "uk-irish", label: "Irish", prompt: "Irish accent" },
+                { value: "au", label: "Australian", prompt: "Australian accent" },
+                { value: "in", label: "Indian English", prompt: "Indian English accent" },
+                { value: "es-en", label: "Spanish-accented English", prompt: "Spanish-accented English" },
+                { value: "fr-en", label: "French-accented English", prompt: "French-accented English" },
+            ];
+
+            const ageOptions = [
+                { value: "child", label: "Child", prompt: "child age range" },
+                { value: "teen", label: "Teen", prompt: "teen age range" },
+                { value: "young-adult", label: "Young adult", prompt: "young adult age range" },
+                { value: "adult", label: "Adult", prompt: "adult age range" },
+                { value: "middle-aged", label: "Middle-aged", prompt: "middle-aged" },
+                { value: "elderly", label: "Elderly", prompt: "elderly age range" },
+            ];
+
+            const deliveryOptions = [
+                { value: "conversational", label: "Conversational", prompt: "conversational delivery" },
+                { value: "narrative", label: "Narrative storytelling", prompt: "narrative storytelling delivery" },
+                { value: "dramatic", label: "Dramatic", prompt: "dramatic theatrical delivery" },
+                { value: "instructional", label: "Instructional / explanatory", prompt: "clear instructional explanatory delivery" },
+                { value: "news-broadcast", label: "News broadcast", prompt: "news-broadcast delivery" },
+                { value: "advertising", label: "Advertising read", prompt: "advertising read delivery" },
+                { value: "audiobook-fiction", label: "Audiobook fiction", prompt: "audiobook fiction delivery" },
+                { value: "customer-service", label: "Customer-service warm", prompt: "warm customer-service delivery" },
+                { value: "character", label: "Character voice", prompt: "in-character voice delivery" },
+            ];
+
+            const emotionOptions = [
+                { value: "neutral", label: "Neutral", prompt: "neutral tone", azureStyle: null, elevenTag: null },
+                { value: "cheerful", label: "Cheerful", prompt: "cheerful tone", azureStyle: "cheerful", elevenTag: "excited" },
+                { value: "sad", label: "Sad", prompt: "sad tone", azureStyle: "sad", elevenTag: "crying" },
+                { value: "angry", label: "Angry", prompt: "angry tone", azureStyle: "angry", elevenTag: "angry" },
+                { value: "fearful", label: "Fearful", prompt: "fearful tone", azureStyle: "terrified", elevenTag: "hesitant" },
+                { value: "calm", label: "Calm", prompt: "calm tone", azureStyle: "calm", elevenTag: null },
+                { value: "excited", label: "Excited", prompt: "excited tone", azureStyle: "excited", elevenTag: "excited" },
+                { value: "whispered", label: "Whispered", prompt: "whispered tone", azureStyle: "whispering", elevenTag: "whispering" },
+                { value: "suspenseful", label: "Suspenseful", prompt: "suspenseful tone", azureStyle: "unfriendly", elevenTag: null },
+                { value: "sarcastic", label: "Sarcastic", prompt: "sarcastic tone", azureStyle: null, elevenTag: "sarcastic" },
+                { value: "hopeful", label: "Hopeful", prompt: "hopeful tone", azureStyle: "hopeful", elevenTag: null },
+                { value: "terrified", label: "Terrified", prompt: "terrified tone", azureStyle: "terrified", elevenTag: null },
+            ];
+
+            const paceOptions = [
+                { value: "very-slow", label: "Very slow", prompt: "very slow deliberate pacing", ssmlRate: "x-slow" },
+                { value: "slow", label: "Slow", prompt: "slow measured pacing", ssmlRate: "slow" },
+                { value: "natural", label: "Natural", prompt: "natural conversational pace", ssmlRate: "medium" },
+                { value: "brisk", label: "Brisk", prompt: "brisk energetic pace", ssmlRate: "fast" },
+                { value: "fast", label: "Fast", prompt: "fast urgent delivery", ssmlRate: "x-fast" },
+            ];
+
+            const pitchOptions = [
+                { value: "very-low", label: "Very low", prompt: "very low pitch", ssmlPitch: "x-low" },
+                { value: "low", label: "Low", prompt: "low pitch", ssmlPitch: "low" },
+                { value: "natural", label: "Natural", prompt: "natural pitch", ssmlPitch: "medium" },
+                { value: "high", label: "High", prompt: "high pitch", ssmlPitch: "high" },
+            ];
+
+            const audioOptions = [
+                { value: "studio", label: "Clean studio", prompt: "clean studio recording" },
+                { value: "telephone", label: "Telephone filter", prompt: "telephone band-limited filter" },
+                { value: "room-reverb", label: "Room reverb", prompt: "natural room reverb" },
+                { value: "podcast", label: "Podcast mic", prompt: "close-mic podcast sound" },
+                { value: "vintage-radio", label: "Vintage radio", prompt: "vintage radio broadcast character" },
+                { value: "am-radio", label: "AM radio", prompt: "AM-radio band-limited filter" },
+                { value: "hall-reverb", label: "Hall reverb", prompt: "concert-hall reverb" },
+            ];
+
+            const traitGroups = [
+                {
+                    label: "Inline Direction Tags",
+                    items: [
+                        ["[whispering]", "Soften to a whisper"],
+                        ["[laughing]", "Laugh during delivery"],
+                        ["[sighs]", "Audible sigh"],
+                        ["[excited]", "High-energy excited delivery"],
+                        ["[sarcastic]", "Sarcastic inflection"],
+                        ["[crying]", "Tearful crying delivery"],
+                        ["[angry]", "Angry delivery"],
+                        ["[shouting]", "Raised voice / shouting"],
+                        ["[hesitant]", "Halting hesitant delivery"],
+                    ],
+                },
+            ];
+
+            const platformFormat = {
+                "elevenlabs-v3": "eleven-tags",
+                "elevenlabs-v2": "voice-desc",
+                "openai-tts1": "plain-with-note",
+                "openai-4o-mini-tts": "openai-instructions",
+                "openai-4o-tts": "openai-instructions",
+                "google-neural2": "ssml",
+                "google-studio": "ssml",
+                "polly-neural": "ssml-polly",
+                "azure-neural": "ssml-azure",
+                "cartesia-sonic": "voice-desc",
+                "playht": "voice-desc",
+                "resemble": "voice-desc",
+            };
+
+            const state = { traits: [] };
+
+            function init() {
+                populateSelect("sel-toolchain", toolchainOptions, "Choose platform...");
+                populateSelect("sel-voice", voiceOptions, "No preference...");
+                populateSelect("sel-accent", accentOptions, "No preference...");
+                populateSelect("sel-age", ageOptions, "No preference...");
+                populateSelect("sel-delivery", deliveryOptions, "No preference...");
+                populateSelect("sel-emotion", emotionOptions, "Neutral...");
+                populateSelect("sel-pace", paceOptions, "Natural pace...");
+                populateSelect("sel-pitch", pitchOptions, "Natural pitch...");
+                populateSelect("sel-audio", audioOptions, "No preference...");
+                populateTraits();
+            }
+
+            function populateSelect(id, options, placeholder) {
+                const sel = document.getElementById(id);
+                sel.innerHTML = `<option value="">${placeholder}</option>`;
+                for (const o of options) {
+                    const opt = document.createElement("option");
+                    opt.value = o.value;
+                    opt.textContent = o.label;
+                    sel.appendChild(opt);
+                }
+            }
+
+            function populateTraits() {
+                const container = document.getElementById("trait-checks");
+                container.innerHTML = "";
+                for (const group of traitGroups) {
+                    const divider = document.createElement("div");
+                    divider.className = "section-divider";
+                    divider.textContent = group.label;
+                    container.appendChild(divider);
+                    for (const [name, tip] of group.items) {
+                        const lbl = document.createElement("label");
+                        lbl.setAttribute("data-tip", tip);
+                        const cb = document.createElement("input");
+                        cb.type = "checkbox";
+                        cb.value = name;
+                        cb.onchange = updateTraitsAndBuild;
+                        lbl.appendChild(cb);
+                        lbl.appendChild(document.createTextNode(name));
+                        container.appendChild(lbl);
+                    }
+                }
+            }
+
+            function updateTraitsAndBuild() {
+                state.traits = [
+                    ...document.querySelectorAll("#trait-checks input:checked"),
+                ].map((c) => c.value);
+                buildPrompt();
+            }
+
+            function lookup(options, value) {
+                return options.find((o) => o.value === value);
+            }
+
+            function escapeXml(s) {
+                return s
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&apos;");
+            }
+
+            function composeVoiceDescription(parts) {
+                return parts.filter(Boolean).join(", ");
+            }
+
+            function buildSsml(format, script, pace, pitch, emotion) {
+                const rate = pace?.ssmlRate ?? "medium";
+                const ptch = pitch?.ssmlPitch ?? "medium";
+                let body = escapeXml(script)
+                    .replace(/\.\.\./g, '<break time="500ms"/>')
+                    .replace(/ &mdash; /g, ' <break time="300ms"/> ')
+                    .replace(/ — /g, ' <break time="300ms"/> ')
+                    .replace(/ -- /g, ' <break time="300ms"/> ');
+
+                if (format === "ssml-azure" && emotion?.azureStyle) {
+                    body = `<mstts:express-as style="${emotion.azureStyle}" styledegree="1.5">${body}</mstts:express-as>`;
+                }
+
+                const prosodyAttrs = (format === "ssml-polly")
+                    ? `rate="${rate}"`
+                    : `rate="${rate}" pitch="${ptch}"`;
+
+                const speakOpen = (format === "ssml-azure")
+                    ? '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">'
+                    : '<speak>';
+
+                return `${speakOpen}\n  <prosody ${prosodyAttrs}>\n    ${body}\n  </prosody>\n</speak>`;
+            }
+
+            function buildPrompt() {
+                const tc = document.getElementById("sel-toolchain").value;
+                const script = document.getElementById("txt-script").value;
+                const voice = lookup(voiceOptions, document.getElementById("sel-voice").value);
+                const accent = lookup(accentOptions, document.getElementById("sel-accent").value);
+                const age = lookup(ageOptions, document.getElementById("sel-age").value);
+                const delivery = lookup(deliveryOptions, document.getElementById("sel-delivery").value);
+                const emotion = lookup(emotionOptions, document.getElementById("sel-emotion").value);
+                const pace = lookup(paceOptions, document.getElementById("sel-pace").value);
+                const pitch = lookup(pitchOptions, document.getElementById("sel-pitch").value);
+                const audio = lookup(audioOptions, document.getElementById("sel-audio").value);
+                const extra = document.getElementById("txt-extra").value.trim();
+
+                const hintEl = document.getElementById("platform-hint");
+                if (tc && toolchainPrompts[tc]) {
+                    hintEl.textContent = "Tip: " + toolchainPrompts[tc];
+                    hintEl.style.display = "block";
+                } else {
+                    hintEl.textContent = "";
+                    hintEl.style.display = "none";
+                }
+
+                const hasAny = script.trim() || voice || accent || age || delivery ||
+                    emotion || pace || pitch || audio || state.traits.length || extra;
+                if (!hasAny) {
+                    document.getElementById("prompt-box").value = "";
+                    return;
+                }
+
+                const descParts = [
+                    voice?.prompt,
+                    accent?.prompt,
+                    age?.prompt,
+                    delivery?.prompt,
+                    emotion?.prompt,
+                    pace?.prompt,
+                    pitch?.prompt,
+                    audio?.prompt,
+                ];
+                const voiceDesc = composeVoiceDescription(descParts);
+                const format = platformFormat[tc] || "plain-with-note";
+                let out = "";
+
+                if (format === "eleven-tags") {
+                    const tagPrefix = state.traits.join(" ");
+                    const header = voiceDesc ? `Voice: ${voiceDesc}\n\n` : "";
+                    const body = tagPrefix
+                        ? `${tagPrefix} ${script}`.trim()
+                        : script.trim();
+                    out = `${header}${body}`;
+                } else if (format === "voice-desc") {
+                    const tagStyleCues = state.traits
+                        .map(t => t.replace(/^\[|\]$/g, ""))
+                        .join(", ");
+                    const fullDesc = tagStyleCues
+                        ? `${voiceDesc}${voiceDesc ? ", " : ""}${tagStyleCues}`
+                        : voiceDesc;
+                    out = `Voice description:\n${fullDesc || "(none specified)"}\n\nText to speak:\n${script.trim()}`;
+                } else if (format === "openai-instructions") {
+                    const tagStyleCues = state.traits
+                        .map(t => t.replace(/^\[|\]$/g, ""))
+                        .join(", ");
+                    const fullDesc = tagStyleCues
+                        ? `${voiceDesc}${voiceDesc ? ", " : ""}${tagStyleCues}`
+                        : voiceDesc;
+                    const instr = `${fullDesc || "(none specified)"}${extra ? "\n" + extra : ""}`;
+                    out = `instructions:\n${instr}\n\ninput:\n${script.trim()}`;
+                } else if (format === "ssml" || format === "ssml-polly" || format === "ssml-azure") {
+                    out = buildSsml(format, script.trim(), pace, pitch, emotion);
+                } else {
+                    const tagStyleCues = state.traits
+                        .map(t => t.replace(/^\[|\]$/g, ""))
+                        .join(", ");
+                    const fullDesc = tagStyleCues
+                        ? `${voiceDesc}${voiceDesc ? ", " : ""}${tagStyleCues}`
+                        : voiceDesc;
+                    out = `Style note: ${fullDesc || "(none specified)"}\n\nText:\n${script.trim()}`;
+                }
+
+                if (extra && format !== "openai-instructions") {
+                    out += `\n\nNotes: ${extra}`;
+                }
+
+                document.getElementById("prompt-box").value = out;
+            }
+
+            function copyPrompt() {
+                navigator.clipboard
+                    .writeText(document.getElementById("prompt-box").value)
+                    .then(() => {
+                        const msg = document.getElementById("toast");
+                        msg.classList.add("show");
+                        setTimeout(() => msg.classList.remove("show"), 1500);
+                    });
+            }
+
+            function resetAll() {
+                [
+                    "sel-toolchain", "txt-script", "sel-voice", "sel-accent",
+                    "sel-age", "sel-delivery", "sel-emotion", "sel-pace",
+                    "sel-pitch", "sel-audio", "txt-extra",
+                ].forEach(id => { document.getElementById(id).value = ""; });
+                state.traits = [];
+                document
+                    .querySelectorAll("#trait-checks input:checked")
+                    .forEach((c) => (c.checked = false));
+                document.getElementById("prompt-box").value = "";
+                document.getElementById("platform-hint").style.display = "none";
+            }
+
+            init();
+        </script>
+    </body>
+</html>
